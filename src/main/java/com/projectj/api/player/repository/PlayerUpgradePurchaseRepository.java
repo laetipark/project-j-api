@@ -1,0 +1,17 @@
+package com.projectj.api.player.repository;
+
+import com.projectj.api.player.domain.PlayerUpgradePurchaseEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface PlayerUpgradePurchaseRepository extends JpaRepository<PlayerUpgradePurchaseEntity, Long>{
+
+	boolean existsByPlayer_IdAndUpgrade_Id(Long playerId, Long upgradeId);
+
+	@Query("select purchase.upgrade.id from PlayerUpgradePurchaseEntity purchase where purchase.player.id = :playerId")
+	List<Long> findUpgradeIdsByPlayerId(@Param("playerId") Long playerId);
+
+}
