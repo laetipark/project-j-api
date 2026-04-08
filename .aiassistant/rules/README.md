@@ -1,3 +1,7 @@
+---
+apply: always
+---
+
 # 규칙 라우터
 
 이 파일은 `.aiassistant`용 짧은 진입점이다.

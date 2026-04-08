@@ -55,6 +55,14 @@ public class GoogleSheetsRecipeCatalogService{
 		return refreshSnapshot().toResponse();
 	}
 
+	public GoogleSheetRecipeCatalogResponse refreshRecipes(){
+		validateConfiguration();
+		validateRecipeTarget();
+		CachedRecipeCatalogSnapshot snapshot = refreshSnapshot();
+		cachedSnapshot = snapshot;
+		return snapshot.toResponse();
+	}
+
 	@EventListener(ApplicationReadyEvent.class)
 	public void warmUp(){
 		refreshSnapshotSafely();

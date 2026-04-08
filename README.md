@@ -54,6 +54,7 @@ Flyway는 애플리케이션 시작 시 자동 실행됩니다.
 
 - `GET /api/v1/bootstrap`
 - `GET /api/v1/catalog/google-sheets/recipes`
+- `POST /api/v1/catalog/google-sheets/recipes/refresh`
 - `POST /api/v1/players`
 - `GET /api/v1/players/{playerId}/snapshot`
 - `POST /api/v1/players/{playerId}/travel`
@@ -84,11 +85,12 @@ Flyway는 애플리케이션 시작 시 자동 실행됩니다.
 
 ## Google Sheets 레시피 연동
 
-레시피 시트는 백그라운드에서 주기적으로 가져오고 마지막 성공 스냅샷을 API로 제공합니다.
+레시피 시트는 백그라운드에서 주기적으로 가져오고 마지막 성공 스냅샷을 API로 제공합니다. 필요하면 수동 갱신 API로 즉시 다시 읽어올 수 있습니다.
 
 - 대상 시트: `GOOGLE_SHEETS_RECIPE_GID` 또는 `GOOGLE_SHEETS_RECIPE_SHEET_NAME`
 - 기본 크롤링 시각: 매시 `06분 02초` (`GOOGLE_SHEETS_REFRESH_CRON=2 6 * * * *`, Asia/Seoul)
 - 조회 API: `GET /api/v1/catalog/google-sheets/recipes`
+- 수동 갱신 API: `POST /api/v1/catalog/google-sheets/recipes/refresh`
 
 응답에는 아래 값이 포함됩니다.
 
