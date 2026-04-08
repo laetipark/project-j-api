@@ -2,6 +2,7 @@ package com.projectj.api.player.service;
 
 import com.projectj.api.catalog.domain.ResourceEntity;
 import com.projectj.api.catalog.domain.ToolEntity;
+import com.projectj.api.common.domain.BaseTimeEntity;
 import com.projectj.api.common.exception.BusinessException;
 import com.projectj.api.common.exception.ErrorCode;
 import com.projectj.api.player.domain.PlayerEntity;
@@ -65,9 +66,7 @@ public class PlayerResourceService{
 	}
 
 	public void addInventory(PlayerEntity player, ResourceEntity resource, int quantity){
-		if(quantity < 1){
-			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
-		}
+		validatePositiveQuantity(quantity);
 
 		PlayerInventoryEntity inventory = playerInventoryRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
 			.orElse(null);
@@ -92,29 +91,20 @@ public class PlayerResourceService{
 	}
 
 	public void removeInventory(PlayerEntity player, ResourceEntity resource, int quantity){
-		if(quantity < 1){
-			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
-		}
+		validatePositiveQuantity(quantity);
 		PlayerInventoryEntity inventory = playerInventoryRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
-			.orElseThrow(() -> new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Inventory resource is insufficient: " + resource.getCode()));
+			.orElseThrow(() -> insufficientResource("Inventory", resource));
 		if(inventory.getQuantity() < quantity){
-			throw new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Inventory resource is insufficient: " + resource.getCode());
+			throw insufficientResource("Inventory", resource);
 		}
 		int remaining = inventory.getQuantity() - quantity;
-		if(remaining == 0){
-			inventory.setQuantity(0);
-			inventory.markDeleted(Instant.now());
-			playerInventoryRepository.save(inventory);
-			return;
-		}
 		inventory.setQuantity(remaining);
+		markDeletedIfDepleted(inventory, remaining);
 		playerInventoryRepository.save(inventory);
 	}
 
 	public void addStorage(PlayerEntity player, ResourceEntity resource, int quantity){
-		if(quantity < 1){
-			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
-		}
+		validatePositiveQuantity(quantity);
 		PlayerStorageEntity storage = playerStorageRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
 			.orElseGet(() -> playerStorageRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId()).orElse(null));
 		if(storage == null){
@@ -130,22 +120,15 @@ public class PlayerResourceService{
 	}
 
 	public void removeStorage(PlayerEntity player, ResourceEntity resource, int quantity){
-		if(quantity < 1){
-			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
-		}
+		validatePositiveQuantity(quantity);
 		PlayerStorageEntity storage = playerStorageRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
-			.orElseThrow(() -> new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Storage resource is insufficient: " + resource.getCode()));
+			.orElseThrow(() -> insufficientResource("Storage", resource));
 		if(storage.getQuantity() < quantity){
-			throw new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Storage resource is insufficient: " + resource.getCode());
+			throw insufficientResource("Storage", resource);
 		}
 		int remaining = storage.getQuantity() - quantity;
-		if(remaining == 0){
-			storage.setQuantity(0);
-			storage.markDeleted(Instant.now());
-			playerStorageRepository.save(storage);
-			return;
-		}
 		storage.setQuantity(remaining);
+		markDeletedIfDepleted(storage, remaining);
 		playerStorageRepository.save(storage);
 	}
 
@@ -189,6 +172,22 @@ public class PlayerResourceService{
 			combined.merge(entry.getKey(), entry.getValue(), Integer::sum);
 		}
 		return combined;
+	}
+
+	private void validatePositiveQuantity(int quantity){
+		if(quantity < 1){
+			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
+		}
+	}
+
+	private BusinessException insufficientResource(String sourceName, ResourceEntity resource){
+		return new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, sourceName + " resource is insufficient: " + resource.getCode());
+	}
+
+	private void markDeletedIfDepleted(BaseTimeEntity entity, int remaining){
+		if(remaining == 0){
+			entity.markDeleted(Instant.now());
+		}
 	}
 
 }

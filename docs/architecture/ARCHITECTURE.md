@@ -78,6 +78,7 @@
 - 같은 재료가 여러 칸에 있으면 수량을 누적하고, 첫 등장 순서 기준으로 구조화된 `ingredients` 배열을 만든다.
 - sync 성공 시 `ingredients`, `recipes`, `recipe_ingredients`를 같은 트랜잭션으로 upsert 하고, 누락된 row는 `deleted_at`으로 soft delete 한다.
 - 메모리 캐시는 DB sync가 성공한 뒤에만 새 스냅샷으로 교체한다.
+- Google Sheets 인증과 HTTP 조회는 `GoogleSheetsCatalogClient`가 담당하고, 캐시/검증/도메인 매핑/DB sync는 `GoogleSheetsRecipeCatalogService`가 담당한다.
 
 ## 동시성
 

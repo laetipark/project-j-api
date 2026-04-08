@@ -1,19 +1,21 @@
 package com.projectj.api.catalog.service;
 
-import com.projectj.api.common.exception.BusinessException;
-import com.projectj.api.common.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static com.projectj.api.catalog.service.GoogleSheetRowMapperSupport.cell;
+import static com.projectj.api.catalog.service.GoogleSheetRowMapperSupport.parseRequiredNumber;
+import static com.projectj.api.catalog.service.GoogleSheetRowMapperSupport.requiredCell;
+import static com.projectj.api.catalog.service.GoogleSheetRowMapperSupport.requiredHeaderIndex;
 
 @Component
 public class GoogleSheetRecipeRowMapper{
 
+	private static final String SHEET_TYPE = "recipe";
 	private static final String HEADER_ID = "id";
 	private static final String HEADER_DIFFICULTY = "\uB09C\uC774\uB3C4";
 	private static final String HEADER_RECIPE_NAME = "\uB808\uC2DC\uD53C\uBA85";
@@ -30,7 +32,6 @@ public class GoogleSheetRecipeRowMapper{
 		"\uC7AC\uB8CC 6",
 		"\uC7AC\uB8CC 7"
 	);
-	private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
 
 	public List<RawSheetRecipe> map(List<List<String>> rows){
 		if(rows.isEmpty()){
@@ -46,17 +47,17 @@ public class GoogleSheetRecipeRowMapper{
 				continue;
 			}
 			int rowNumber = rowIndex + 1;
-			String recipeId = requiredCell(row, headerIndexes.get(HEADER_ID), HEADER_ID, rowNumber);
+			String recipeId = requiredCell(row, headerIndexes.get(HEADER_ID), HEADER_ID, rowNumber, SHEET_TYPE);
 			recipes.add(
 				new RawSheetRecipe(
 					rowNumber,
 					recipeId,
 					recipeName,
 					cell(row, headerIndexes.get(HEADER_SUPPLY_SOURCE)),
-					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_DIFFICULTY)), HEADER_DIFFICULTY, rowNumber),
+					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_DIFFICULTY)), HEADER_DIFFICULTY, rowNumber, SHEET_TYPE),
 					cell(row, headerIndexes.get(HEADER_COOKING_METHOD)),
 					extractIngredients(row, headerIndexes),
-					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_PRICE)), HEADER_PRICE, rowNumber),
+					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_PRICE)), HEADER_PRICE, rowNumber, SHEET_TYPE),
 					cell(row, headerIndexes.get(HEADER_MEMO))
 				)
 			);
@@ -66,30 +67,17 @@ public class GoogleSheetRecipeRowMapper{
 
 	private Map<String, Integer> buildHeaderIndexes(List<String> headerRow){
 		Map<String, Integer> indexes = new LinkedHashMap<>();
-		indexes.put(HEADER_ID, requiredHeaderIndex(headerRow, HEADER_ID));
-		indexes.put(HEADER_DIFFICULTY, requiredHeaderIndex(headerRow, HEADER_DIFFICULTY));
-		indexes.put(HEADER_RECIPE_NAME, requiredHeaderIndex(headerRow, HEADER_RECIPE_NAME));
-		indexes.put(HEADER_SUPPLY_SOURCE, requiredHeaderIndex(headerRow, HEADER_SUPPLY_SOURCE));
-		indexes.put(HEADER_COOKING_METHOD, requiredHeaderIndex(headerRow, HEADER_COOKING_METHOD));
-		indexes.put(HEADER_PRICE, requiredHeaderIndex(headerRow, HEADER_PRICE));
-		indexes.put(HEADER_MEMO, requiredHeaderIndex(headerRow, HEADER_MEMO));
+		indexes.put(HEADER_ID, requiredHeaderIndex(headerRow, HEADER_ID, SHEET_TYPE));
+		indexes.put(HEADER_DIFFICULTY, requiredHeaderIndex(headerRow, HEADER_DIFFICULTY, SHEET_TYPE));
+		indexes.put(HEADER_RECIPE_NAME, requiredHeaderIndex(headerRow, HEADER_RECIPE_NAME, SHEET_TYPE));
+		indexes.put(HEADER_SUPPLY_SOURCE, requiredHeaderIndex(headerRow, HEADER_SUPPLY_SOURCE, SHEET_TYPE));
+		indexes.put(HEADER_COOKING_METHOD, requiredHeaderIndex(headerRow, HEADER_COOKING_METHOD, SHEET_TYPE));
+		indexes.put(HEADER_PRICE, requiredHeaderIndex(headerRow, HEADER_PRICE, SHEET_TYPE));
+		indexes.put(HEADER_MEMO, requiredHeaderIndex(headerRow, HEADER_MEMO, SHEET_TYPE));
 		for(String ingredientHeader : INGREDIENT_HEADERS){
-			indexes.put(ingredientHeader, requiredHeaderIndex(headerRow, ingredientHeader));
+			indexes.put(ingredientHeader, requiredHeaderIndex(headerRow, ingredientHeader, SHEET_TYPE));
 		}
 		return indexes;
-	}
-
-	private int requiredHeaderIndex(List<String> headerRow, String headerName){
-		for(int index = 0; index < headerRow.size(); index++){
-			String value = headerRow.get(index);
-			if(value != null && headerName.equals(value.trim())){
-				return index;
-			}
-		}
-		throw new BusinessException(
-			ErrorCode.GOOGLE_SHEETS_INVALID_FORMAT,
-			"Google Sheets recipe header is missing: " + headerName
-		);
 	}
 
 	private List<String> extractIngredients(List<String> row, Map<String, Integer> headerIndexes){
@@ -101,43 +89,6 @@ public class GoogleSheetRecipeRowMapper{
 			}
 		}
 		return ingredients;
-	}
-
-	private String requiredCell(List<String> row, int index, String headerName, int rowNumber){
-		String value = cell(row, index);
-		if(value == null){
-			throw new BusinessException(
-				ErrorCode.GOOGLE_SHEETS_INVALID_FORMAT,
-				"Google Sheets recipe value is required. header=%s row=%d".formatted(headerName, rowNumber)
-			);
-		}
-		return value;
-	}
-
-	private String cell(List<String> row, int index){
-		if(index >= row.size()){
-			return null;
-		}
-		String value = row.get(index);
-		if(value == null){
-			return null;
-		}
-		String trimmed = value.trim();
-		return trimmed.isEmpty() ? null : trimmed;
-	}
-
-	private int parseRequiredNumber(String value, String headerName, int rowNumber){
-		if(value == null){
-			return 0;
-		}
-		Matcher matcher = NUMBER_PATTERN.matcher(value.replace(",", ""));
-		if(!matcher.find()){
-			throw new BusinessException(
-				ErrorCode.GOOGLE_SHEETS_INVALID_FORMAT,
-				"Google Sheets recipe value is invalid. header=%s row=%d value=%s".formatted(headerName, rowNumber, value)
-			);
-		}
-		return Integer.parseInt(matcher.group(1));
 	}
 
 }
