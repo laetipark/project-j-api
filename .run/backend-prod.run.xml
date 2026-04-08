@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="backend-prod" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.projectj.api.JongguRestaurantApiApplication" />
+    <module name="project-j-api" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=prod" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <shortenClasspath name="ARGS_FILE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
