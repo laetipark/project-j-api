@@ -35,3 +35,9 @@ springdoc:
 app:
   cors:
     allowed-origins: ${JONGGU_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173}
+  google-sheets:
+    credentials-path: ${GOOGLE_CREDENTIALS_PATH:}
+    spreadsheet-id: ${GOOGLE_SHEETS_ID:}
+    recipe-sheet-gid: ${GOOGLE_SHEETS_RECIPE_GID:}
+    recipe-sheet-name: ${GOOGLE_SHEETS_RECIPE_SHEET_NAME:}
+    refresh-cron: ${GOOGLE_SHEETS_REFRESH_CRON:2 6 * * * *}

@@ -1,0 +1,7 @@
+spring:
+  config:
+    import: optional:file:.env.production[.properties]
+  datasource:
+    url: ${JONGGU_DB_URL}
+    username: ${JONGGU_DB_USERNAME}
+    password: ${JONGGU_DB_PASSWORD}

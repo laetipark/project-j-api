@@ -127,7 +127,9 @@ fabric.properties
 .env.local
 .env.*.local
 .env.development
+.env.production
 .env.test
+credentials/
 
 ### IDE
 .idea/
