@@ -1,7 +1,8 @@
 package com.projectj.api.catalog.dto;
 
 public record RecipeIngredientResponse(
-	String resourceCode,
+	String ingredientId,
+	String ingredientName,
 	int quantity
 ){
 }

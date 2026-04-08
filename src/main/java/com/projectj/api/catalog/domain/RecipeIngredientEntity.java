@@ -17,7 +17,7 @@ import jakarta.persistence.UniqueConstraint;
 @Table(
 	name = "recipe_ingredients",
 	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_recipe_ingredients_recipe_resource", columnNames = {"recipe_id", "resource_id"})
+		@UniqueConstraint(name = "uk_recipe_ingredients_recipe_ingredient", columnNames = {"recipe_id", "ingredient_id"})
 	}
 )
 public class RecipeIngredientEntity extends BaseTimeEntity{
@@ -31,13 +31,16 @@ public class RecipeIngredientEntity extends BaseTimeEntity{
 	private RecipeEntity recipe;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "resource_id", nullable = false, foreignKey = @ForeignKey(name = "fk_recipe_ingredients_resources"))
-	private ResourceEntity resource;
+	@JoinColumn(name = "ingredient_id", nullable = false, foreignKey = @ForeignKey(name = "fk_recipe_ingredients_ingredients"))
+	private IngredientEntity ingredient;
 
 	@Column(nullable = false)
 	private int quantity;
 
-	protected RecipeIngredientEntity(){
+	@Column(name = "sort_order", nullable = false)
+	private int sortOrder;
+
+	public RecipeIngredientEntity(){
 	}
 
 	public Long getId(){
@@ -52,12 +55,12 @@ public class RecipeIngredientEntity extends BaseTimeEntity{
 		this.recipe = recipe;
 	}
 
-	public ResourceEntity getResource(){
-		return resource;
+	public IngredientEntity getIngredient(){
+		return ingredient;
 	}
 
-	public void setResource(ResourceEntity resource){
-		this.resource = resource;
+	public void setIngredient(IngredientEntity ingredient){
+		this.ingredient = ingredient;
 	}
 
 	public int getQuantity(){
@@ -66,6 +69,14 @@ public class RecipeIngredientEntity extends BaseTimeEntity{
 
 	public void setQuantity(int quantity){
 		this.quantity = quantity;
+	}
+
+	public int getSortOrder(){
+		return sortOrder;
+	}
+
+	public void setSortOrder(int sortOrder){
+		this.sortOrder = sortOrder;
 	}
 
 }

@@ -9,6 +9,6 @@ import java.util.Optional;
 public interface GameSettingRepository extends JpaRepository<GameSettingEntity, Long>{
 
 	@EntityGraph(attributePaths = {"startRegion"})
-	Optional<GameSettingEntity> findTopByOrderByIdAsc();
+	Optional<GameSettingEntity> findTopByDeletedAtIsNullOrderByIdAsc();
 
 }

@@ -1,7 +1,6 @@
 package com.projectj.api.catalog.domain;
 
 import com.projectj.api.common.domain.BaseTimeEntity;
-import com.projectj.api.player.domain.PlayerPhase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -40,9 +39,6 @@ public class PortalRuleEntity extends BaseTimeEntity{
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "to_region_id", nullable = false, foreignKey = @ForeignKey(name = "fk_portal_rules_to_regions"))
 	private RegionEntity toRegion;
-
-	@Column(name = "required_phase", nullable = false, length = 40)
-	private PlayerPhase requiredPhase;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "required_tool_id", foreignKey = @ForeignKey(name = "fk_portal_rules_tools"))
@@ -91,14 +87,6 @@ public class PortalRuleEntity extends BaseTimeEntity{
 
 	public void setToRegion(RegionEntity toRegion){
 		this.toRegion = toRegion;
-	}
-
-	public PlayerPhase getRequiredPhase(){
-		return requiredPhase;
-	}
-
-	public void setRequiredPhase(PlayerPhase requiredPhase){
-		this.requiredPhase = requiredPhase;
 	}
 
 	public ToolEntity getRequiredTool(){

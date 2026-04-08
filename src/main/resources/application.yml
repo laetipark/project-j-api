@@ -38,6 +38,8 @@ app:
   google-sheets:
     credentials-path: ${GOOGLE_CREDENTIALS_PATH:}
     spreadsheet-id: ${GOOGLE_SHEETS_ID:}
+    ingredient-sheet-gid: ${GOOGLE_SHEETS_INGREDIENT_GID:}
+    ingredient-sheet-name: ${GOOGLE_SHEETS_INGREDIENT_SHEET_NAME:재료}
     recipe-sheet-gid: ${GOOGLE_SHEETS_RECIPE_GID:}
-    recipe-sheet-name: ${GOOGLE_SHEETS_RECIPE_SHEET_NAME:}
+    recipe-sheet-name: ${GOOGLE_SHEETS_RECIPE_SHEET_NAME:레시피}
     refresh-cron: ${GOOGLE_SHEETS_REFRESH_CRON:2 6 * * * *}

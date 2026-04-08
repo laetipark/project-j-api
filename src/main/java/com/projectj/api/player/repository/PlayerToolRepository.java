@@ -9,8 +9,8 @@ import java.util.List;
 public interface PlayerToolRepository extends JpaRepository<PlayerToolEntity, Long>{
 
 	@EntityGraph(attributePaths = {"tool"})
-	List<PlayerToolEntity> findByPlayer_IdOrderByTool_CodeAsc(Long playerId);
+	List<PlayerToolEntity> findByPlayer_IdAndDeletedAtIsNullOrderByTool_CodeAsc(Long playerId);
 
-	boolean existsByPlayer_IdAndTool_Id(Long playerId, Long toolId);
+	boolean existsByPlayer_IdAndTool_IdAndDeletedAtIsNull(Long playerId, Long toolId);
 
 }

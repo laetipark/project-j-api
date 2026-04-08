@@ -8,8 +8,10 @@ import java.util.Optional;
 
 public interface ResourceRepository extends JpaRepository<ResourceEntity, Long>{
 
-	List<ResourceEntity> findAllByActiveTrueOrderByIdAsc();
+	List<ResourceEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
-	Optional<ResourceEntity> findByCode(String code);
+	Optional<ResourceEntity> findByCodeAndActiveTrueAndDeletedAtIsNull(String code);
+
+	Optional<ResourceEntity> findByNameAndActiveTrueAndDeletedAtIsNull(String name);
 
 }

@@ -12,15 +12,15 @@ import java.util.Optional;
 
 public interface PlayerRepository extends JpaRepository<PlayerEntity, Long>{
 
-	Optional<PlayerEntity> findByPublicId(String publicId);
+	Optional<PlayerEntity> findByPublicIdAndDeletedAtIsNull(String publicId);
 
-	@EntityGraph(attributePaths = {"currentRegion", "selectedRecipe"})
-	@Query("select player from PlayerEntity player where player.publicId = :publicId")
+	@EntityGraph(attributePaths = {"currentRegion"})
+	@Query("select player from PlayerEntity player where player.publicId = :publicId and player.deletedAt is null")
 	Optional<PlayerEntity> findDetailedByPublicId(@Param("publicId") String publicId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@EntityGraph(attributePaths = {"currentRegion", "selectedRecipe"})
-	@Query("select player from PlayerEntity player where player.publicId = :publicId")
+	@EntityGraph(attributePaths = {"currentRegion"})
+	@Query("select player from PlayerEntity player where player.publicId = :publicId and player.deletedAt is null")
 	Optional<PlayerEntity> findLockedByPublicId(@Param("publicId") String publicId);
 
 }

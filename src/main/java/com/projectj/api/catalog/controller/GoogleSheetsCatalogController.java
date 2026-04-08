@@ -20,7 +20,7 @@ public class GoogleSheetsCatalogController{
 
 	@GetMapping("/recipes")
 	public ApiResponse<GoogleSheetRecipeCatalogResponse> getRecipes(){
-		return ApiResponse.success(googleSheetsRecipeCatalogService.getRecipes());
+		return ApiResponse.success(googleSheetsRecipeCatalogService.getRecipeCatalogResponse());
 	}
 
 	@PostMapping("/recipes/refresh")

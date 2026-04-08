@@ -8,8 +8,10 @@ import java.util.Optional;
 
 public interface RecipeRepository extends JpaRepository<RecipeEntity, Long>{
 
-	List<RecipeEntity> findAllByActiveTrueOrderByIdAsc();
+	List<RecipeEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
-	Optional<RecipeEntity> findByCode(String code);
+	Optional<RecipeEntity> findByRecipeIdAndActiveTrueAndDeletedAtIsNull(String recipeId);
+
+	Optional<RecipeEntity> findByRecipeId(String recipeId);
 
 }

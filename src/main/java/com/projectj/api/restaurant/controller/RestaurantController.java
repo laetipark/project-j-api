@@ -35,9 +35,4 @@ public class RestaurantController{
 		return ApiResponse.success(restaurantService.runService(playerId));
 	}
 
-	@PostMapping("/service/skip")
-	public ApiResponse<ServiceRunResponse> skipService(@PathVariable String playerId){
-		return ApiResponse.success(restaurantService.skipService(playerId));
-	}
-
 }

@@ -9,9 +9,14 @@ import java.util.List;
 
 public interface PlayerUpgradePurchaseRepository extends JpaRepository<PlayerUpgradePurchaseEntity, Long>{
 
-	boolean existsByPlayer_IdAndUpgrade_Id(Long playerId, Long upgradeId);
+	boolean existsByPlayer_IdAndUpgrade_IdAndDeletedAtIsNull(Long playerId, Long upgradeId);
 
-	@Query("select purchase.upgrade.id from PlayerUpgradePurchaseEntity purchase where purchase.player.id = :playerId")
+	@Query("""
+		select purchase.upgrade.id
+		from PlayerUpgradePurchaseEntity purchase
+		where purchase.player.id = :playerId
+		  and purchase.deletedAt is null
+		""")
 	List<Long> findUpgradeIdsByPlayerId(@Param("playerId") Long playerId);
 
 }

@@ -13,6 +13,7 @@ import com.projectj.api.player.repository.PlayerStorageRepository;
 import com.projectj.api.player.repository.PlayerToolRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,22 +36,22 @@ public class PlayerResourceService{
 	}
 
 	public List<PlayerInventoryEntity> getInventory(PlayerEntity player){
-		return playerInventoryRepository.findByPlayer_IdOrderByResource_CodeAsc(player.getId());
+		return playerInventoryRepository.findByPlayer_IdAndDeletedAtIsNullOrderByResource_CodeAsc(player.getId());
 	}
 
 	public List<PlayerStorageEntity> getStorage(PlayerEntity player){
-		return playerStorageRepository.findByPlayer_IdOrderByResource_CodeAsc(player.getId());
+		return playerStorageRepository.findByPlayer_IdAndDeletedAtIsNullOrderByResource_CodeAsc(player.getId());
 	}
 
 	public List<PlayerToolEntity> getUnlockedTools(PlayerEntity player){
-		return playerToolRepository.findByPlayer_IdOrderByTool_CodeAsc(player.getId());
+		return playerToolRepository.findByPlayer_IdAndDeletedAtIsNullOrderByTool_CodeAsc(player.getId());
 	}
 
 	public boolean hasTool(PlayerEntity player, ToolEntity tool){
 		if(tool == null){
 			return true;
 		}
-		return playerToolRepository.existsByPlayer_IdAndTool_Id(player.getId(), tool.getId());
+		return playerToolRepository.existsByPlayer_IdAndTool_IdAndDeletedAtIsNull(player.getId(), tool.getId());
 	}
 
 	public void unlockTool(PlayerEntity player, ToolEntity tool){
@@ -68,18 +69,23 @@ public class PlayerResourceService{
 			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
 		}
 
-		PlayerInventoryEntity inventory = playerInventoryRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId())
+		PlayerInventoryEntity inventory = playerInventoryRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
 			.orElse(null);
 		if(inventory == null){
-			long occupiedSlots = playerInventoryRepository.countByPlayer_IdAndQuantityGreaterThan(player.getId(), 0);
+			long occupiedSlots = playerInventoryRepository.countByPlayer_IdAndQuantityGreaterThanAndDeletedAtIsNull(player.getId(), 0);
 			if(occupiedSlots >= player.getInventorySlotLimit()){
 				throw new BusinessException(ErrorCode.INVENTORY_CAPACITY_EXCEEDED, "Inventory slot limit would be exceeded.");
 			}
-			inventory = new PlayerInventoryEntity();
-			inventory.setPlayer(player);
-			inventory.setResource(resource);
+			inventory = playerInventoryRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId()).orElse(null);
+			if(inventory == null){
+				inventory = new PlayerInventoryEntity();
+				inventory.setPlayer(player);
+				inventory.setResource(resource);
+			}
+			inventory.restore();
 			inventory.setQuantity(quantity);
 		}else{
+			inventory.restore();
 			inventory.setQuantity(inventory.getQuantity() + quantity);
 		}
 		playerInventoryRepository.save(inventory);
@@ -89,14 +95,16 @@ public class PlayerResourceService{
 		if(quantity < 1){
 			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
 		}
-		PlayerInventoryEntity inventory = playerInventoryRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId())
+		PlayerInventoryEntity inventory = playerInventoryRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
 			.orElseThrow(() -> new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Inventory resource is insufficient: " + resource.getCode()));
 		if(inventory.getQuantity() < quantity){
 			throw new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Inventory resource is insufficient: " + resource.getCode());
 		}
 		int remaining = inventory.getQuantity() - quantity;
 		if(remaining == 0){
-			playerInventoryRepository.delete(inventory);
+			inventory.setQuantity(0);
+			inventory.markDeleted(Instant.now());
+			playerInventoryRepository.save(inventory);
 			return;
 		}
 		inventory.setQuantity(remaining);
@@ -107,14 +115,15 @@ public class PlayerResourceService{
 		if(quantity < 1){
 			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
 		}
-		PlayerStorageEntity storage = playerStorageRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId())
-			.orElse(null);
+		PlayerStorageEntity storage = playerStorageRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
+			.orElseGet(() -> playerStorageRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId()).orElse(null));
 		if(storage == null){
 			storage = new PlayerStorageEntity();
 			storage.setPlayer(player);
 			storage.setResource(resource);
 			storage.setQuantity(quantity);
 		}else{
+			storage.restore();
 			storage.setQuantity(storage.getQuantity() + quantity);
 		}
 		playerStorageRepository.save(storage);
@@ -124,14 +133,16 @@ public class PlayerResourceService{
 		if(quantity < 1){
 			throw new BusinessException(ErrorCode.INVALID_REQUEST, "Quantity must be positive.");
 		}
-		PlayerStorageEntity storage = playerStorageRepository.findByPlayer_IdAndResource_Id(player.getId(), resource.getId())
+		PlayerStorageEntity storage = playerStorageRepository.findByPlayer_IdAndResource_IdAndDeletedAtIsNull(player.getId(), resource.getId())
 			.orElseThrow(() -> new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Storage resource is insufficient: " + resource.getCode()));
 		if(storage.getQuantity() < quantity){
 			throw new BusinessException(ErrorCode.INSUFFICIENT_RESOURCE, "Storage resource is insufficient: " + resource.getCode());
 		}
 		int remaining = storage.getQuantity() - quantity;
 		if(remaining == 0){
-			playerStorageRepository.delete(storage);
+			storage.setQuantity(0);
+			storage.markDeleted(Instant.now());
+			playerStorageRepository.save(storage);
 			return;
 		}
 		storage.setQuantity(remaining);

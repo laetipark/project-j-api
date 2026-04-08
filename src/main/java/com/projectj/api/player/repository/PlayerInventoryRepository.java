@@ -10,10 +10,12 @@ import java.util.Optional;
 public interface PlayerInventoryRepository extends JpaRepository<PlayerInventoryEntity, Long>{
 
 	@EntityGraph(attributePaths = {"resource"})
-	List<PlayerInventoryEntity> findByPlayer_IdOrderByResource_CodeAsc(Long playerId);
+	List<PlayerInventoryEntity> findByPlayer_IdAndDeletedAtIsNullOrderByResource_CodeAsc(Long playerId);
+
+	Optional<PlayerInventoryEntity> findByPlayer_IdAndResource_IdAndDeletedAtIsNull(Long playerId, Long resourceId);
 
 	Optional<PlayerInventoryEntity> findByPlayer_IdAndResource_Id(Long playerId, Long resourceId);
 
-	long countByPlayer_IdAndQuantityGreaterThan(Long playerId, int quantity);
+	long countByPlayer_IdAndQuantityGreaterThanAndDeletedAtIsNull(Long playerId, int quantity);
 
 }

@@ -1,6 +1,5 @@
 package com.projectj.api.player.domain;
 
-import com.projectj.api.catalog.domain.RecipeEntity;
 import com.projectj.api.catalog.domain.RegionEntity;
 import com.projectj.api.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
@@ -35,12 +34,6 @@ public class PlayerEntity extends BaseTimeEntity{
 	@Column(name = "display_name", length = 120)
 	private String displayName;
 
-	@Column(name = "current_day", nullable = false)
-	private int currentDay;
-
-	@Column(name = "current_phase", nullable = false, length = 40)
-	private PlayerPhase currentPhase;
-
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "current_region_id", nullable = false, foreignKey = @ForeignKey(name = "fk_players_current_regions"))
 	private RegionEntity currentRegion;
@@ -57,9 +50,8 @@ public class PlayerEntity extends BaseTimeEntity{
 	@Column(name = "inventory_slot_limit", nullable = false)
 	private int inventorySlotLimit;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "selected_recipe_id", foreignKey = @ForeignKey(name = "fk_players_selected_recipes"))
-	private RecipeEntity selectedRecipe;
+	@Column(name = "selected_recipe_id", length = 120)
+	private String selectedRecipeId;
 
 	@Version
 	@Column(nullable = false)
@@ -86,22 +78,6 @@ public class PlayerEntity extends BaseTimeEntity{
 
 	public void setDisplayName(String displayName){
 		this.displayName = displayName;
-	}
-
-	public int getCurrentDay(){
-		return currentDay;
-	}
-
-	public void setCurrentDay(int currentDay){
-		this.currentDay = currentDay;
-	}
-
-	public PlayerPhase getCurrentPhase(){
-		return currentPhase;
-	}
-
-	public void setCurrentPhase(PlayerPhase currentPhase){
-		this.currentPhase = currentPhase;
 	}
 
 	public RegionEntity getCurrentRegion(){
@@ -144,12 +120,12 @@ public class PlayerEntity extends BaseTimeEntity{
 		this.inventorySlotLimit = inventorySlotLimit;
 	}
 
-	public RecipeEntity getSelectedRecipe(){
-		return selectedRecipe;
+	public String getSelectedRecipeId(){
+		return selectedRecipeId;
 	}
 
-	public void setSelectedRecipe(RecipeEntity selectedRecipe){
-		this.selectedRecipe = selectedRecipe;
+	public void setSelectedRecipeId(String selectedRecipeId){
+		this.selectedRecipeId = selectedRecipeId;
 	}
 
 	public long getVersion(){

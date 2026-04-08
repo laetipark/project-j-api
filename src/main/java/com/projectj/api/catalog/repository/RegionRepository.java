@@ -8,8 +8,8 @@ import java.util.Optional;
 
 public interface RegionRepository extends JpaRepository<RegionEntity, Long>{
 
-	List<RegionEntity> findAllByActiveTrueOrderByIdAsc();
+	List<RegionEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
-	Optional<RegionEntity> findByCode(String code);
+	Optional<RegionEntity> findByCodeAndActiveTrueAndDeletedAtIsNull(String code);
 
 }

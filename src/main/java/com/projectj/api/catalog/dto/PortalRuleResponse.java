@@ -5,7 +5,6 @@ public record PortalRuleResponse(
 	String name,
 	String fromRegionCode,
 	String toRegionCode,
-	String requiredPhase,
 	String requiredToolCode,
 	int requiredReputation
 ){

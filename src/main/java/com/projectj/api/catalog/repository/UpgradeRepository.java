@@ -10,9 +10,9 @@ import java.util.Optional;
 public interface UpgradeRepository extends JpaRepository<UpgradeEntity, Long>{
 
 	@EntityGraph(attributePaths = {"tool", "prerequisiteUpgrade"})
-	List<UpgradeEntity> findAllByActiveTrueOrderByIdAsc();
+	List<UpgradeEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
 	@EntityGraph(attributePaths = {"tool", "prerequisiteUpgrade"})
-	Optional<UpgradeEntity> findByCodeAndActiveTrue(String code);
+	Optional<UpgradeEntity> findByCodeAndActiveTrueAndDeletedAtIsNull(String code);
 
 }

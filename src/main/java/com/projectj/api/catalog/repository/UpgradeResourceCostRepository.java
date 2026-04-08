@@ -9,6 +9,6 @@ import java.util.List;
 public interface UpgradeResourceCostRepository extends JpaRepository<UpgradeResourceCostEntity, Long>{
 
 	@EntityGraph(attributePaths = {"resource"})
-	List<UpgradeResourceCostEntity> findByUpgradeIdOrderByIdAsc(Long upgradeId);
+	List<UpgradeResourceCostEntity> findByUpgradeIdAndDeletedAtIsNullOrderByIdAsc(Long upgradeId);
 
 }

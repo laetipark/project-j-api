@@ -1,18 +1,23 @@
 package com.projectj.api;
 
-import com.projectj.api.catalog.domain.RecipeEntity;
 import com.projectj.api.catalog.service.CatalogLookupService;
+import com.projectj.api.catalog.service.RecipeCatalogService;
+import com.projectj.api.catalog.service.SheetRecipe;
+import com.projectj.api.catalog.service.SheetRecipeIngredient;
 import com.projectj.api.common.exception.BusinessException;
-import com.projectj.api.dayrun.service.DayAdvanceService;
 import com.projectj.api.exploration.dto.GatherRequest;
 import com.projectj.api.exploration.dto.GatherResponse;
 import com.projectj.api.exploration.dto.TravelRequest;
 import com.projectj.api.exploration.service.ExplorationService;
 import com.projectj.api.player.domain.PlayerEntity;
+import com.projectj.api.player.domain.PlayerInventoryEntity;
+import com.projectj.api.player.domain.PlayerStorageEntity;
 import com.projectj.api.player.dto.CreatePlayerRequest;
 import com.projectj.api.player.dto.CreatePlayerResponse;
 import com.projectj.api.player.dto.PlayerSnapshotResponse;
+import com.projectj.api.player.repository.PlayerInventoryRepository;
 import com.projectj.api.player.repository.PlayerRepository;
+import com.projectj.api.player.repository.PlayerStorageRepository;
 import com.projectj.api.player.service.PlayerLifecycleService;
 import com.projectj.api.player.service.PlayerResourceService;
 import com.projectj.api.restaurant.dto.SelectRecipeRequest;
@@ -25,13 +30,19 @@ import com.projectj.api.upgrade.service.UpgradePurchaseService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,19 +57,22 @@ class JongguRestaurantApiIntegrationTest{
 	private PlayerRepository playerRepository;
 
 	@Autowired
-	private CatalogLookupService catalogLookupService;
-
-	@Autowired
 	private ExplorationService explorationService;
 
 	@Autowired
 	private RestaurantService restaurantService;
 
 	@Autowired
-	private DayAdvanceService dayAdvanceService;
+	private CatalogLookupService catalogLookupService;
 
 	@Autowired
 	private PlayerResourceService playerResourceService;
+
+	@Autowired
+	private PlayerInventoryRepository playerInventoryRepository;
+
+	@Autowired
+	private PlayerStorageRepository playerStorageRepository;
 
 	@Autowired
 	private StorageService storageService;
@@ -67,42 +81,24 @@ class JongguRestaurantApiIntegrationTest{
 	private UpgradePurchaseService upgradePurchaseService;
 
 	@Test
-	void phaseTransitionsFollowMorningServiceSettlementLoop(){
-		CreatePlayerResponse player = createPlayer("phase-player");
-
-		explorationService.travel(player.playerId(), new TravelRequest("GoToBeach"));
-		explorationService.travel(player.playerId(), new TravelRequest("ReturnToHubFromBeach"));
-		PlayerSnapshotResponse afternoonSnapshot = explorationService.skipExploration(player.playerId());
-		assertEquals("afternoon_service", afternoonSnapshot.currentPhase());
-
-		ServiceRunResponse settlementSnapshot = restaurantService.skipService(player.playerId());
-		assertEquals("settlement", settlementSnapshot.snapshot().currentPhase());
-
-		PlayerSnapshotResponse nextDaySnapshot = dayAdvanceService.nextDay(player.playerId());
-		assertEquals(2, nextDaySnapshot.currentDay());
-		assertEquals("morning_explore", nextDaySnapshot.currentPhase());
-		assertEquals("Hub", nextDaySnapshot.currentRegion());
-	}
-
-	@Test
-	void serviceRunUsesCookableCountAndServiceCapacityMinimum(){
+	void serviceRunUsesSheetRecipeIdAndAggregatedIngredients(){
 		CreatePlayerResponse player = createPlayer("service-player");
 		PlayerEntity playerEntity = loadPlayer(player.playerId());
 		playerResourceService.addInventory(playerEntity, catalogLookupService.getResourceByCode("Fish"), 5);
 		playerResourceService.addInventory(playerEntity, catalogLookupService.getResourceByCode("Seaweed"), 3);
 
-		explorationService.skipExploration(player.playerId());
-		restaurantService.selectRecipe(player.playerId(), new SelectRecipeRequest("SushiSet"));
+		PlayerSnapshotResponse afterSelect = restaurantService.selectRecipe(player.playerId(), new SelectRecipeRequest("food_041"));
+		assertEquals("food_041", afterSelect.selectedRecipeId());
+
 		ServiceRunResponse response = restaurantService.runService(player.playerId());
 
-		assertEquals("SushiSet", response.recipeCode());
+		assertEquals("food_041", response.recipeId());
 		assertEquals(2, response.cookableCount());
 		assertEquals(2, response.soldCount());
-		assertEquals(36, response.earnedGold());
-		assertEquals(2, response.earnedReputation());
-		assertEquals("settlement", response.snapshot().currentPhase());
-		assertEquals(36, response.snapshot().gold());
-		assertEquals(2, response.snapshot().reputation());
+		assertEquals(50, response.earnedGold());
+		assertEquals(0, response.earnedReputation());
+		assertEquals("food_041", response.snapshot().selectedRecipeId());
+		assertEquals(50, response.snapshot().gold());
 
 		Map<String, Integer> inventoryMap = toQuantityMap(response.snapshot());
 		assertEquals(1, inventoryMap.get("Fish"));
@@ -110,7 +106,7 @@ class JongguRestaurantApiIntegrationTest{
 	}
 
 	@Test
-	void inventorySlotRuleCountsDistinctResourceTypes(){
+	void inventorySlotRuleCountsDistinctResourceTypesWithoutDayLoop(){
 		CreatePlayerResponse player = createPlayer("inventory-player");
 		PlayerEntity playerEntity = loadPlayer(player.playerId());
 		playerEntity.setInventorySlotLimit(2);
@@ -144,6 +140,52 @@ class JongguRestaurantApiIntegrationTest{
 	}
 
 	@Test
+	void inventoryRowsAreSoftDeletedAndRevived(){
+		CreatePlayerResponse player = createPlayer("inventory-soft-delete-player");
+		PlayerEntity playerEntity = loadPlayer(player.playerId());
+		var herb = catalogLookupService.getResourceByCode("Herb");
+
+		playerResourceService.addInventory(playerEntity, herb, 2);
+		PlayerInventoryEntity initialRow = playerInventoryRepository.findByPlayer_IdAndResource_Id(playerEntity.getId(), herb.getId()).orElseThrow();
+
+		playerResourceService.removeInventory(playerEntity, herb, 2);
+		PlayerInventoryEntity deletedRow = playerInventoryRepository.findByPlayer_IdAndResource_Id(playerEntity.getId(), herb.getId()).orElseThrow();
+		assertEquals(initialRow.getId(), deletedRow.getId());
+		assertEquals(0, deletedRow.getQuantity());
+		assertNotNull(deletedRow.getDeletedAt());
+		assertTrue(playerResourceService.getInventory(playerEntity).isEmpty());
+
+		playerResourceService.addInventory(playerEntity, herb, 3);
+		PlayerInventoryEntity restoredRow = playerInventoryRepository.findByPlayer_IdAndResource_Id(playerEntity.getId(), herb.getId()).orElseThrow();
+		assertEquals(initialRow.getId(), restoredRow.getId());
+		assertEquals(3, restoredRow.getQuantity());
+		assertNull(restoredRow.getDeletedAt());
+	}
+
+	@Test
+	void storageRowsAreSoftDeletedAndRevived(){
+		CreatePlayerResponse player = createPlayer("storage-soft-delete-player");
+		PlayerEntity playerEntity = loadPlayer(player.playerId());
+		var shell = catalogLookupService.getResourceByCode("Shell");
+
+		playerResourceService.addStorage(playerEntity, shell, 2);
+		PlayerStorageEntity initialRow = playerStorageRepository.findByPlayer_IdAndResource_Id(playerEntity.getId(), shell.getId()).orElseThrow();
+
+		playerResourceService.removeStorage(playerEntity, shell, 2);
+		PlayerStorageEntity deletedRow = playerStorageRepository.findByPlayer_IdAndResource_Id(playerEntity.getId(), shell.getId()).orElseThrow();
+		assertEquals(initialRow.getId(), deletedRow.getId());
+		assertEquals(0, deletedRow.getQuantity());
+		assertNotNull(deletedRow.getDeletedAt());
+		assertTrue(playerResourceService.getStorage(playerEntity).isEmpty());
+
+		playerResourceService.addStorage(playerEntity, shell, 4);
+		PlayerStorageEntity restoredRow = playerStorageRepository.findByPlayer_IdAndResource_Id(playerEntity.getId(), shell.getId()).orElseThrow();
+		assertEquals(initialRow.getId(), restoredRow.getId());
+		assertEquals(4, restoredRow.getQuantity());
+		assertNull(restoredRow.getDeletedAt());
+	}
+
+	@Test
 	void upgradePurchaseConsumesCostsAndAppliesEffect(){
 		CreatePlayerResponse player = createPlayer("upgrade-player");
 		PlayerEntity playerEntity = loadPlayer(player.playerId());
@@ -160,7 +202,7 @@ class JongguRestaurantApiIntegrationTest{
 	}
 
 	@Test
-	void portalAccessChecksToolAndReputationConditions(){
+	void portalAccessChecksToolAndReputationConditionsWithoutPhaseGate(){
 		CreatePlayerResponse player = createPlayer("portal-player");
 
 		BusinessException mineException = assertThrows(
@@ -193,6 +235,60 @@ class JongguRestaurantApiIntegrationTest{
 	private Map<String, Integer> toStorageQuantityMap(PlayerSnapshotResponse snapshot){
 		return snapshot.storageResources().stream()
 			.collect(Collectors.toMap(resource -> resource.resourceCode(), resource -> resource.quantity()));
+	}
+
+	@TestConfiguration
+	static class RecipeCatalogTestConfiguration{
+
+		@Bean
+		@Primary
+		RecipeCatalogService recipeCatalogService(){
+			List<SheetRecipe> recipes = List.of(
+				new SheetRecipe(
+					2,
+					"food_021",
+					"Fish Meal",
+					"Beach",
+					1,
+					"Pan",
+					List.of(
+						new SheetRecipeIngredient("ingredient_fish", "Fish", 1),
+						new SheetRecipeIngredient("ingredient_seaweed", "Seaweed", 1)
+					),
+					18,
+					null
+				),
+				new SheetRecipe(
+					3,
+					"food_041",
+					"Double Fish Meal",
+					"Beach",
+					2,
+					"Pot",
+					List.of(
+						new SheetRecipeIngredient("ingredient_fish", "Fish", 2),
+						new SheetRecipeIngredient("ingredient_seaweed", "Seaweed", 1)
+					),
+					25,
+					null
+				)
+			);
+			return new RecipeCatalogService(){
+				@Override
+				public List<SheetRecipe> getRecipes(){
+					return recipes;
+				}
+
+				@Override
+				public SheetRecipe getRecipeById(String recipeId){
+					return recipes.stream()
+						.filter(recipe -> recipe.recipeId().equals(recipeId))
+						.findFirst()
+						.orElseThrow();
+				}
+			};
+		}
+
 	}
 
 }

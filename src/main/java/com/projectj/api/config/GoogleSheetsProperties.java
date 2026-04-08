@@ -9,8 +9,10 @@ public class GoogleSheetsProperties{
 
 	private String credentialsPath;
 	private String spreadsheetId;
+	private Long ingredientSheetGid;
+	private String ingredientSheetName = "재료";
 	private Long recipeSheetGid;
-	private String recipeSheetName;
+	private String recipeSheetName = "레시피";
 	private String refreshCron = "2 6 * * * *";
 
 	public String getCredentialsPath(){
@@ -31,6 +33,22 @@ public class GoogleSheetsProperties{
 
 	public Long getRecipeSheetGid(){
 		return recipeSheetGid;
+	}
+
+	public Long getIngredientSheetGid(){
+		return ingredientSheetGid;
+	}
+
+	public void setIngredientSheetGid(Long ingredientSheetGid){
+		this.ingredientSheetGid = ingredientSheetGid;
+	}
+
+	public String getIngredientSheetName(){
+		return ingredientSheetName;
+	}
+
+	public void setIngredientSheetName(String ingredientSheetName){
+		this.ingredientSheetName = ingredientSheetName;
 	}
 
 	public void setRecipeSheetGid(Long recipeSheetGid){
@@ -59,6 +77,10 @@ public class GoogleSheetsProperties{
 
 	public boolean hasRecipeTarget(){
 		return recipeSheetGid != null || hasText(recipeSheetName);
+	}
+
+	public boolean hasIngredientTarget(){
+		return ingredientSheetGid != null || hasText(ingredientSheetName);
 	}
 
 	private boolean hasText(String value){

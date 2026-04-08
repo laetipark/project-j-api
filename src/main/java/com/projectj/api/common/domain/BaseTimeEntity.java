@@ -16,6 +16,9 @@ public abstract class BaseTimeEntity{
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
+	@Column(name = "deleted_at")
+	private Instant deletedAt;
+
 	@PrePersist
 	protected void onCreate(){
 		Instant now = Instant.now();
@@ -36,12 +39,32 @@ public abstract class BaseTimeEntity{
 		return updatedAt;
 	}
 
+	public Instant getDeletedAt(){
+		return deletedAt;
+	}
+
 	protected void setCreatedAt(Instant createdAt){
 		this.createdAt = createdAt;
 	}
 
 	protected void setUpdatedAt(Instant updatedAt){
 		this.updatedAt = updatedAt;
+	}
+
+	public void setDeletedAt(Instant deletedAt){
+		this.deletedAt = deletedAt;
+	}
+
+	public void restore(){
+		this.deletedAt = null;
+	}
+
+	public void markDeleted(Instant deletedAt){
+		this.deletedAt = deletedAt;
+	}
+
+	public boolean isDeleted(){
+		return deletedAt != null;
 	}
 
 }

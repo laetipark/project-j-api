@@ -4,6 +4,7 @@ import java.util.List;
 
 public record BootstrapResponse(
 	List<ResourceDefinitionResponse> resources,
+	List<IngredientDefinitionResponse> ingredients,
 	List<ToolDefinitionResponse> tools,
 	List<RegionDefinitionResponse> regions,
 	List<PortalRuleResponse> portalRules,

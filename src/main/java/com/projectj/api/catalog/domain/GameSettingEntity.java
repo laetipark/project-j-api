@@ -20,9 +20,6 @@ public class GameSettingEntity extends BaseTimeEntity{
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "start_day", nullable = false)
-	private int startDay;
-
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "start_region_id", nullable = false, foreignKey = @ForeignKey(name = "fk_game_settings_regions"))
 	private RegionEntity startRegion;
@@ -44,14 +41,6 @@ public class GameSettingEntity extends BaseTimeEntity{
 
 	public Long getId(){
 		return id;
-	}
-
-	public int getStartDay(){
-		return startDay;
-	}
-
-	public void setStartDay(int startDay){
-		this.startDay = startDay;
 	}
 
 	public RegionEntity getStartRegion(){

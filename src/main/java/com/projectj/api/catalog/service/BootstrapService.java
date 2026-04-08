@@ -1,9 +1,8 @@
 package com.projectj.api.catalog.service;
 
 import com.projectj.api.catalog.domain.GameSettingEntity;
+import com.projectj.api.catalog.domain.IngredientEntity;
 import com.projectj.api.catalog.domain.PortalRuleEntity;
-import com.projectj.api.catalog.domain.RecipeEntity;
-import com.projectj.api.catalog.domain.RecipeIngredientEntity;
 import com.projectj.api.catalog.domain.RegionEntity;
 import com.projectj.api.catalog.domain.ResourceEntity;
 import com.projectj.api.catalog.domain.ToolEntity;
@@ -11,9 +10,10 @@ import com.projectj.api.catalog.domain.UpgradeEntity;
 import com.projectj.api.catalog.domain.UpgradeResourceCostEntity;
 import com.projectj.api.catalog.dto.BootstrapResponse;
 import com.projectj.api.catalog.dto.GameSettingsResponse;
+import com.projectj.api.catalog.dto.IngredientDefinitionResponse;
 import com.projectj.api.catalog.dto.PortalRuleResponse;
-import com.projectj.api.catalog.dto.RecipeDefinitionResponse;
 import com.projectj.api.catalog.dto.RecipeIngredientResponse;
+import com.projectj.api.catalog.dto.RecipeDefinitionResponse;
 import com.projectj.api.catalog.dto.RegionDefinitionResponse;
 import com.projectj.api.catalog.dto.ResourceDefinitionResponse;
 import com.projectj.api.catalog.dto.ToolDefinitionResponse;
@@ -27,15 +27,21 @@ import java.util.List;
 public class BootstrapService{
 
 	private final CatalogLookupService catalogLookupService;
+	private final RecipeCatalogService recipeCatalogService;
 
-	public BootstrapService(CatalogLookupService catalogLookupService){
+	public BootstrapService(CatalogLookupService catalogLookupService, RecipeCatalogService recipeCatalogService){
 		this.catalogLookupService = catalogLookupService;
+		this.recipeCatalogService = recipeCatalogService;
 	}
 
 	public BootstrapResponse getBootstrap(){
 		List<ResourceDefinitionResponse> resources = catalogLookupService.getActiveResources()
 			.stream()
 			.map(this::toResourceResponse)
+			.toList();
+		List<IngredientDefinitionResponse> ingredients = catalogLookupService.getActiveIngredients()
+			.stream()
+			.map(this::toIngredientResponse)
 			.toList();
 		List<ToolDefinitionResponse> tools = catalogLookupService.getActiveTools()
 			.stream()
@@ -49,7 +55,7 @@ public class BootstrapService{
 			.stream()
 			.map(this::toPortalRuleResponse)
 			.toList();
-		List<RecipeDefinitionResponse> recipes = catalogLookupService.getActiveRecipes()
+		List<RecipeDefinitionResponse> recipes = recipeCatalogService.getRecipes()
 			.stream()
 			.map(this::toRecipeResponse)
 			.toList();
@@ -58,7 +64,7 @@ public class BootstrapService{
 			.map(this::toUpgradeResponse)
 			.toList();
 		GameSettingsResponse settings = toSettingsResponse(catalogLookupService.getGameSettings());
-		return new BootstrapResponse(resources, tools, regions, portalRules, recipes, upgrades, settings);
+		return new BootstrapResponse(resources, ingredients, tools, regions, portalRules, recipes, upgrades, settings);
 	}
 
 	private ResourceDefinitionResponse toResourceResponse(ResourceEntity resource){
@@ -67,6 +73,21 @@ public class BootstrapService{
 
 	private ToolDefinitionResponse toToolResponse(ToolEntity tool){
 		return new ToolDefinitionResponse(tool.getCode(), tool.getName(), tool.isDefaultUnlocked());
+	}
+
+	private IngredientDefinitionResponse toIngredientResponse(IngredientEntity ingredient){
+		return new IngredientDefinitionResponse(
+			ingredient.getIngredientId(),
+			ingredient.getIngredientName(),
+			ingredient.getDifficulty(),
+			ingredient.getSupplySource(),
+			ingredient.getAcquisitionSource(),
+			ingredient.getAcquisitionMethod(),
+			ingredient.getAcquisitionTool(),
+			ingredient.getBuyPrice(),
+			ingredient.getSellPrice(),
+			ingredient.getMemo()
+		);
 	}
 
 	private RegionDefinitionResponse toRegionResponse(RegionEntity region){
@@ -79,29 +100,26 @@ public class BootstrapService{
 			portalRule.getName(),
 			portalRule.getFromRegion().getCode(),
 			portalRule.getToRegion().getCode(),
-			portalRule.getRequiredPhase().getCode(),
 			portalRule.getRequiredTool() != null ? portalRule.getRequiredTool().getCode() : null,
 			portalRule.getRequiredReputation()
 		);
 	}
 
-	private RecipeDefinitionResponse toRecipeResponse(RecipeEntity recipe){
-		List<RecipeIngredientResponse> ingredients = catalogLookupService.getRecipeIngredients(recipe.getId())
-			.stream()
-			.map(this::toRecipeIngredientResponse)
-			.toList();
+	private RecipeDefinitionResponse toRecipeResponse(SheetRecipe recipe){
 		return new RecipeDefinitionResponse(
-			recipe.getCode(),
-			recipe.getName(),
-			recipe.getDifficulty(),
-			recipe.getSellPrice(),
-			recipe.getReputationReward(),
-			ingredients
+			recipe.recipeId(),
+			recipe.recipeName(),
+			recipe.supplySource(),
+			recipe.difficulty(),
+			recipe.cookingMethod(),
+			recipe.ingredients().stream().map(this::toRecipeIngredientResponse).toList(),
+			recipe.price(),
+			recipe.memo()
 		);
 	}
 
-	private RecipeIngredientResponse toRecipeIngredientResponse(RecipeIngredientEntity ingredient){
-		return new RecipeIngredientResponse(ingredient.getResource().getCode(), ingredient.getQuantity());
+	private RecipeIngredientResponse toRecipeIngredientResponse(SheetRecipeIngredient ingredient){
+		return new RecipeIngredientResponse(ingredient.ingredientId(), ingredient.ingredientName(), ingredient.quantity());
 	}
 
 	private UpgradeDefinitionResponse toUpgradeResponse(UpgradeEntity upgrade){
@@ -127,7 +145,6 @@ public class BootstrapService{
 
 	private GameSettingsResponse toSettingsResponse(GameSettingEntity settings){
 		return new GameSettingsResponse(
-			settings.getStartDay(),
 			settings.getStartRegion().getCode(),
 			settings.getStartGold(),
 			settings.getStartReputation(),

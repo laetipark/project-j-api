@@ -13,7 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 @Table(
 	name = "recipes",
 	uniqueConstraints = {
-		@UniqueConstraint(name = "uk_recipes_code", columnNames = "code")
+		@UniqueConstraint(name = "uk_recipes_recipe_id", columnNames = "recipe_id")
 	}
 )
 public class RecipeEntity extends BaseTimeEntity{
@@ -22,45 +22,59 @@ public class RecipeEntity extends BaseTimeEntity{
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false, length = 80)
-	private String code;
+	@Column(name = "recipe_id", nullable = false, length = 120)
+	private String recipeId;
 
-	@Column(nullable = false, length = 120)
-	private String name;
+	@Column(name = "recipe_name", nullable = false, length = 120)
+	private String recipeName;
+
+	@Column(name = "supply_source", length = 120)
+	private String supplySource;
 
 	@Column(nullable = false)
 	private int difficulty;
 
-	@Column(name = "sell_price", nullable = false)
-	private int sellPrice;
+	@Column(name = "cooking_method", length = 120)
+	private String cookingMethod;
 
-	@Column(name = "reputation_reward", nullable = false)
-	private int reputationReward;
+	@Column(nullable = false)
+	private int price;
+
+	@Column(length = 500)
+	private String memo;
 
 	@Column(nullable = false)
 	private boolean active;
 
-	protected RecipeEntity(){
+	public RecipeEntity(){
 	}
 
 	public Long getId(){
 		return id;
 	}
 
-	public String getCode(){
-		return code;
+	public String getRecipeId(){
+		return recipeId;
 	}
 
-	public void setCode(String code){
-		this.code = code;
+	public void setRecipeId(String recipeId){
+		this.recipeId = recipeId;
 	}
 
-	public String getName(){
-		return name;
+	public String getRecipeName(){
+		return recipeName;
 	}
 
-	public void setName(String name){
-		this.name = name;
+	public void setRecipeName(String recipeName){
+		this.recipeName = recipeName;
+	}
+
+	public String getSupplySource(){
+		return supplySource;
+	}
+
+	public void setSupplySource(String supplySource){
+		this.supplySource = supplySource;
 	}
 
 	public int getDifficulty(){
@@ -71,20 +85,28 @@ public class RecipeEntity extends BaseTimeEntity{
 		this.difficulty = difficulty;
 	}
 
-	public int getSellPrice(){
-		return sellPrice;
+	public String getCookingMethod(){
+		return cookingMethod;
 	}
 
-	public void setSellPrice(int sellPrice){
-		this.sellPrice = sellPrice;
+	public void setCookingMethod(String cookingMethod){
+		this.cookingMethod = cookingMethod;
 	}
 
-	public int getReputationReward(){
-		return reputationReward;
+	public int getPrice(){
+		return price;
 	}
 
-	public void setReputationReward(int reputationReward){
-		this.reputationReward = reputationReward;
+	public void setPrice(int price){
+		this.price = price;
+	}
+
+	public String getMemo(){
+		return memo;
+	}
+
+	public void setMemo(String memo){
+		this.memo = memo;
 	}
 
 	public boolean isActive(){

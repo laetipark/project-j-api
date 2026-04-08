@@ -10,7 +10,6 @@
   - `restaurant`
   - `storage`
   - `upgrade`
-  - `dayrun`
   - `common`
   - `config`
 
@@ -21,59 +20,80 @@
 - `service`
   - 트랜잭션, 규칙 검증, 상태 전이를 담당한다.
 - `repository`
-  - 필요한 쿼리만 제공한다.
+  - 필요한 조회와 저장만 담당한다.
 - `domain`
   - JPA 엔티티와 enum을 둔다.
 - `dto`
-  - 외부 응답/요청 계약을 둔다.
+  - 외부 요청과 응답 계약을 둔다.
 
 ## 서버 정본 범위
 
 서버는 아래를 정본으로 가진다.
 
-- 플레이어 진행 상태
+- 플레이어 상태
 - 경제
 - 인벤토리와 창고
 - 도구 해금
-- 업그레이드 구매
-- day run
-- 채집/영업/경제/창고 로그
+- 업그레이드 구매 상태
+- 지역 이동 규칙과 채집 규칙
+- 자원 카탈로그
 
-서버는 아래를 정본으로 갖지 않는다.
+레시피와 재료 정본은 DB가 아니라 Google Sheets `레시피`, `재료` 시트다.
 
-- Unity 씬 위치
-- 오브젝트 배치
-- 위험 지대 좌표와 세부 파라미터
+서버가 정본으로 갖지 않는 것은 아래와 같다.
 
-## 상태 전이
+- Unity 씬 배치
+- 이미지 파일 배치
+- 레시피 썸네일 리소스 자체
 
-- `morning_explore`
-- `afternoon_service`
-- `settlement`
+## 카탈로그 경계
 
-전이는 서비스 계층에서만 수행한다.
+- DB/Flyway가 관리하는 스키마
+  - tools
+  - regions
+  - resources
+  - ingredients
+  - recipes
+  - recipe_ingredients
+  - resource_gather_rules
+  - portal_rules
+  - upgrades
+  - upgrade_resource_costs
+  - game_settings
+- Google Sheets가 관리하는 정본 데이터
+  - ingredient rows
+  - recipe rows
+  - recipe ingredient names
+  - ingredient / recipe metadata
+
+## 시트 동기화 구조
+
+- Google Sheets `재료` 시트를 먼저 읽는다.
+- 2행부터 `재료명`이 비어 있지 않은 행만 사용한다.
+- `ingredientId`는 `재료` 시트의 `id` 열 값을 그대로 사용한다.
+- Google Sheets `레시피` 시트를 읽는다.
+- 2행부터 `레시피명`이 비어 있지 않은 행만 사용한다.
+- `recipeId`는 `레시피` 시트의 `id` 열 값을 그대로 사용한다. 예: `food_001`, `food_041`
+- `레시피` 시트의 `재료 1`~`재료 7`은 재료명 기준으로 읽고, 활성 `ingredients.ingredient_name`과 exact match 해야 한다.
+- 같은 재료가 여러 칸에 있으면 수량을 누적하고, 첫 등장 순서 기준으로 구조화된 `ingredients` 배열을 만든다.
+- sync 성공 시 `ingredients`, `recipes`, `recipe_ingredients`를 같은 트랜잭션으로 upsert 하고, 누락된 row는 `deleted_at`으로 soft delete 한다.
+- 메모리 캐시는 DB sync가 성공한 뒤에만 새 스냅샷으로 교체한다.
 
 ## 동시성
 
-- 명령형 API는 player row를 `PESSIMISTIC_WRITE`로 읽는다.
-- 같은 트랜잭션 안에서 inventory, storage, upgrade purchase, day run, 로그를 갱신한다.
-- `@Version` 필드도 유지해 후속 확장 시 optimistic locking 여지도 남긴다.
+- 명령형 API는 player row를 `PESSIMISTIC_WRITE`로 잠근다.
+- 같은 트랜잭션 안에서 inventory, storage, upgrade purchase, service 결과를 함께 갱신한다.
+- 레시피 캐시는 읽기 전용 스냅샷으로 유지하고, 갱신 시 새 스냅샷으로 교체한다.
 
-## 테이블 주도 설계
+## 현재 고정 규칙
 
-아래 값은 코드 상수보다 DB/Flyway 시드를 우선한다.
-
-- 레시피 가격
-- 레시피 평판 보상
-- 업그레이드 비용
-- 포탈 조건
-- 시작 상태
-- 기본 해금 도구
-
-## 절대 고정 규칙
-
-- `players.current_phase`는 enum으로 강하게 관리한다.
-- inventory slot은 서로 다른 resource 종류 수 기준이다.
-- tool은 인벤토리 슬롯을 차지하지 않는다.
-- `player_region_unlocks` 같은 별도 영구 해금 테이블은 만들지 않는다.
-- 포탈 접근 가능 여부는 현재 상태로 계산한다.
+- 하루 루프와 phase 상태는 더 이상 서버 모델에 존재하지 않는다.
+- `selected_recipe_id`는 DB 외래 키가 아닌 문자열 `recipeId`를 저장한다.
+- `recipes` 테이블은 시트 정본을 upsert 해 캐시하고, 시트에 없는 `recipe_id`는 `deleted_at`으로 soft delete 한다.
+- `ingredients`와 `recipe_ingredients`도 시트 정본을 upsert 해 캐시하고, 시트에 없는 row는 `deleted_at`으로 soft delete 한다.
+- `BaseTimeEntity`를 쓰는 테이블은 `created_at`, `updated_at`, `deleted_at`을 공통으로 가진다.
+- inventory slot 계산은 서로 다른 resource code 개수를 기준으로 한다.
+- tool은 인벤토리 수량이 아니라 `player_tools`로 관리한다.
+- portal 진입 가능 여부는 현재 지역, 도구, 평판으로 동적으로 계산한다.
+- 레시피 재료명은 활성 `ingredients.ingredient_name`과 exact match 해야 한다.
+- 영업 계산은 아직 `ingredientName -> resource.name` 브리지로 기존 `resources` 기반 소비 흐름을 유지한다.

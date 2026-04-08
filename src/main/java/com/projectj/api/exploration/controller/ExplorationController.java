@@ -39,9 +39,4 @@ public class ExplorationController{
 		return ApiResponse.success(explorationService.gather(playerId, request));
 	}
 
-	@PostMapping("/exploration/skip")
-	public ApiResponse<PlayerSnapshotResponse> skipExploration(@PathVariable String playerId){
-		return ApiResponse.success(explorationService.skipExploration(playerId));
-	}
-
 }

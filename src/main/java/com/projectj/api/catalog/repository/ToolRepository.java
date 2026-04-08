@@ -8,10 +8,10 @@ import java.util.Optional;
 
 public interface ToolRepository extends JpaRepository<ToolEntity, Long>{
 
-	List<ToolEntity> findAllByActiveTrueOrderByIdAsc();
+	List<ToolEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
-	List<ToolEntity> findByDefaultUnlockedTrueAndActiveTrueOrderByIdAsc();
+	List<ToolEntity> findByDefaultUnlockedTrueAndActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
-	Optional<ToolEntity> findByCode(String code);
+	Optional<ToolEntity> findByCodeAndActiveTrueAndDeletedAtIsNull(String code);
 
 }

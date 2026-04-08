@@ -12,70 +12,66 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
-public class GoogleSheetRecipeRowMapper{
+public class GoogleSheetIngredientRowMapper{
 
 	private static final String HEADER_ID = "id";
-	private static final String HEADER_DIFFICULTY = "\uB09C\uC774\uB3C4";
-	private static final String HEADER_RECIPE_NAME = "\uB808\uC2DC\uD53C\uBA85";
-	private static final String HEADER_SUPPLY_SOURCE = "\uC218\uAE09\uCC98";
-	private static final String HEADER_COOKING_METHOD = "\uC870\uB9AC\uBC95";
-	private static final String HEADER_PRICE = "\uAC00\uACA9";
-	private static final String HEADER_MEMO = "\uBA54\uBAA8";
-	private static final List<String> INGREDIENT_HEADERS = List.of(
-		"\uC7AC\uB8CC 1",
-		"\uC7AC\uB8CC 2",
-		"\uC7AC\uB8CC 3",
-		"\uC7AC\uB8CC 4",
-		"\uC7AC\uB8CC 5",
-		"\uC7AC\uB8CC 6",
-		"\uC7AC\uB8CC 7"
-	);
+	private static final String HEADER_DIFFICULTY = "난이도";
+	private static final String HEADER_INGREDIENT_NAME = "재료명";
+	private static final String HEADER_SUPPLY_SOURCE = "수급처";
+	private static final String HEADER_ACQUISITION_SOURCE = "획득처";
+	private static final String HEADER_ACQUISITION_METHOD = "획득방식";
+	private static final String HEADER_ACQUISITION_TOOL = "획득도구";
+	private static final String HEADER_BUY_PRICE = "구매가격";
+	private static final String HEADER_SELL_PRICE = "판매가격";
+	private static final String HEADER_MEMO = "메모";
 	private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
 
-	public List<RawSheetRecipe> map(List<List<String>> rows){
+	public List<SheetIngredient> map(List<List<String>> rows){
 		if(rows.isEmpty()){
 			return List.of();
 		}
 
 		Map<String, Integer> headerIndexes = buildHeaderIndexes(rows.getFirst());
-		List<RawSheetRecipe> recipes = new ArrayList<>();
+		List<SheetIngredient> ingredients = new ArrayList<>();
 		for(int rowIndex = 1; rowIndex < rows.size(); rowIndex++){
 			List<String> row = rows.get(rowIndex);
-			String recipeName = cell(row, headerIndexes.get(HEADER_RECIPE_NAME));
-			if(recipeName == null){
+			String ingredientName = cell(row, headerIndexes.get(HEADER_INGREDIENT_NAME));
+			if(ingredientName == null){
 				continue;
 			}
+
 			int rowNumber = rowIndex + 1;
-			String recipeId = requiredCell(row, headerIndexes.get(HEADER_ID), HEADER_ID, rowNumber);
-			recipes.add(
-				new RawSheetRecipe(
+			ingredients.add(
+				new SheetIngredient(
 					rowNumber,
-					recipeId,
-					recipeName,
-					cell(row, headerIndexes.get(HEADER_SUPPLY_SOURCE)),
+					requiredCell(row, headerIndexes.get(HEADER_ID), HEADER_ID, rowNumber),
+					ingredientName,
 					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_DIFFICULTY)), HEADER_DIFFICULTY, rowNumber),
-					cell(row, headerIndexes.get(HEADER_COOKING_METHOD)),
-					extractIngredients(row, headerIndexes),
-					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_PRICE)), HEADER_PRICE, rowNumber),
+					cell(row, headerIndexes.get(HEADER_SUPPLY_SOURCE)),
+					cell(row, headerIndexes.get(HEADER_ACQUISITION_SOURCE)),
+					cell(row, headerIndexes.get(HEADER_ACQUISITION_METHOD)),
+					cell(row, headerIndexes.get(HEADER_ACQUISITION_TOOL)),
+					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_BUY_PRICE)), HEADER_BUY_PRICE, rowNumber),
+					parseRequiredNumber(cell(row, headerIndexes.get(HEADER_SELL_PRICE)), HEADER_SELL_PRICE, rowNumber),
 					cell(row, headerIndexes.get(HEADER_MEMO))
 				)
 			);
 		}
-		return recipes;
+		return ingredients;
 	}
 
 	private Map<String, Integer> buildHeaderIndexes(List<String> headerRow){
 		Map<String, Integer> indexes = new LinkedHashMap<>();
 		indexes.put(HEADER_ID, requiredHeaderIndex(headerRow, HEADER_ID));
 		indexes.put(HEADER_DIFFICULTY, requiredHeaderIndex(headerRow, HEADER_DIFFICULTY));
-		indexes.put(HEADER_RECIPE_NAME, requiredHeaderIndex(headerRow, HEADER_RECIPE_NAME));
+		indexes.put(HEADER_INGREDIENT_NAME, requiredHeaderIndex(headerRow, HEADER_INGREDIENT_NAME));
 		indexes.put(HEADER_SUPPLY_SOURCE, requiredHeaderIndex(headerRow, HEADER_SUPPLY_SOURCE));
-		indexes.put(HEADER_COOKING_METHOD, requiredHeaderIndex(headerRow, HEADER_COOKING_METHOD));
-		indexes.put(HEADER_PRICE, requiredHeaderIndex(headerRow, HEADER_PRICE));
+		indexes.put(HEADER_ACQUISITION_SOURCE, requiredHeaderIndex(headerRow, HEADER_ACQUISITION_SOURCE));
+		indexes.put(HEADER_ACQUISITION_METHOD, requiredHeaderIndex(headerRow, HEADER_ACQUISITION_METHOD));
+		indexes.put(HEADER_ACQUISITION_TOOL, requiredHeaderIndex(headerRow, HEADER_ACQUISITION_TOOL));
+		indexes.put(HEADER_BUY_PRICE, requiredHeaderIndex(headerRow, HEADER_BUY_PRICE));
+		indexes.put(HEADER_SELL_PRICE, requiredHeaderIndex(headerRow, HEADER_SELL_PRICE));
 		indexes.put(HEADER_MEMO, requiredHeaderIndex(headerRow, HEADER_MEMO));
-		for(String ingredientHeader : INGREDIENT_HEADERS){
-			indexes.put(ingredientHeader, requiredHeaderIndex(headerRow, ingredientHeader));
-		}
 		return indexes;
 	}
 
@@ -88,19 +84,8 @@ public class GoogleSheetRecipeRowMapper{
 		}
 		throw new BusinessException(
 			ErrorCode.GOOGLE_SHEETS_INVALID_FORMAT,
-			"Google Sheets recipe header is missing: " + headerName
+			"Google Sheets ingredient header is missing: " + headerName
 		);
-	}
-
-	private List<String> extractIngredients(List<String> row, Map<String, Integer> headerIndexes){
-		List<String> ingredients = new ArrayList<>();
-		for(String ingredientHeader : INGREDIENT_HEADERS){
-			String ingredient = cell(row, headerIndexes.get(ingredientHeader));
-			if(ingredient != null){
-				ingredients.add(ingredient);
-			}
-		}
-		return ingredients;
 	}
 
 	private String requiredCell(List<String> row, int index, String headerName, int rowNumber){
@@ -108,7 +93,7 @@ public class GoogleSheetRecipeRowMapper{
 		if(value == null){
 			throw new BusinessException(
 				ErrorCode.GOOGLE_SHEETS_INVALID_FORMAT,
-				"Google Sheets recipe value is required. header=%s row=%d".formatted(headerName, rowNumber)
+				"Google Sheets ingredient value is required. header=%s row=%d".formatted(headerName, rowNumber)
 			);
 		}
 		return value;
@@ -134,7 +119,7 @@ public class GoogleSheetRecipeRowMapper{
 		if(!matcher.find()){
 			throw new BusinessException(
 				ErrorCode.GOOGLE_SHEETS_INVALID_FORMAT,
-				"Google Sheets recipe value is invalid. header=%s row=%d value=%s".formatted(headerName, rowNumber, value)
+				"Google Sheets ingredient value is invalid. header=%s row=%d value=%s".formatted(headerName, rowNumber, value)
 			);
 		}
 		return Integer.parseInt(matcher.group(1));

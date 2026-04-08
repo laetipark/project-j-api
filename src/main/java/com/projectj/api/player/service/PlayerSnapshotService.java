@@ -1,8 +1,5 @@
 package com.projectj.api.player.service;
 
-import com.projectj.api.dayrun.domain.DayRunEntity;
-import com.projectj.api.dayrun.dto.DayRunSummaryResponse;
-import com.projectj.api.dayrun.service.DayRunService;
 import com.projectj.api.player.domain.PlayerEntity;
 import com.projectj.api.player.dto.PlayerSnapshotResponse;
 import com.projectj.api.player.dto.ResourceAmountResponse;
@@ -17,18 +14,15 @@ public class PlayerSnapshotService{
 	private final PlayerSupportService playerSupportService;
 	private final PlayerResourceService playerResourceService;
 	private final UpgradeAvailabilityService upgradeAvailabilityService;
-	private final DayRunService dayRunService;
 
 	public PlayerSnapshotService(
 		PlayerSupportService playerSupportService,
 		PlayerResourceService playerResourceService,
-		UpgradeAvailabilityService upgradeAvailabilityService,
-		DayRunService dayRunService
+		UpgradeAvailabilityService upgradeAvailabilityService
 	){
 		this.playerSupportService = playerSupportService;
 		this.playerResourceService = playerResourceService;
 		this.upgradeAvailabilityService = upgradeAvailabilityService;
-		this.dayRunService = dayRunService;
 	}
 
 	public PlayerSnapshotResponse getSnapshot(String playerId){
@@ -48,42 +42,19 @@ public class PlayerSnapshotService{
 			.stream()
 			.map(entry -> entry.getTool().getCode())
 			.toList();
-		DayRunSummaryResponse currentDayRun = toDayRunSummary(dayRunService.getCurrentDayRun(player));
-		DayRunSummaryResponse lastSettlementSummary = toDayRunSummary(dayRunService.resolveLastSettlement(player));
 		return new PlayerSnapshotResponse(
 			player.getPublicId(),
 			player.getDisplayName(),
-			player.getCurrentDay(),
-			player.getCurrentPhase().getCode(),
 			player.getCurrentRegion().getCode(),
 			player.getGold(),
 			player.getReputation(),
 			player.getServiceCapacity(),
 			player.getInventorySlotLimit(),
-			player.getSelectedRecipe() != null ? player.getSelectedRecipe().getCode() : null,
+			player.getSelectedRecipeId(),
 			inventoryResources,
 			storageResources,
 			unlockedTools,
-			upgradeAvailabilityService.getAvailableUpgrades(player),
-			currentDayRun,
-			lastSettlementSummary
-		);
-	}
-
-	private DayRunSummaryResponse toDayRunSummary(DayRunEntity dayRun){
-		if(dayRun == null){
-			return null;
-		}
-		return new DayRunSummaryResponse(
-			dayRun.getDayNumber(),
-			dayRun.getSelectedRecipe() != null ? dayRun.getSelectedRecipe().getCode() : null,
-			dayRun.getGatherSuccessCount(),
-			dayRun.getGatherFailureCount(),
-			dayRun.getTotalGatheredQuantity(),
-			dayRun.isServiceSkipped(),
-			dayRun.getSoldCount(),
-			dayRun.getEarnedGold(),
-			dayRun.getEarnedReputation()
+			upgradeAvailabilityService.getAvailableUpgrades(player)
 		);
 	}
 

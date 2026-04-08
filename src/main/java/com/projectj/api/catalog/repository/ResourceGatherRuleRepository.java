@@ -12,13 +12,14 @@ import java.util.Optional;
 public interface ResourceGatherRuleRepository extends JpaRepository<ResourceGatherRuleEntity, Long>{
 
 	@EntityGraph(attributePaths = {"region", "resource", "requiredTool"})
-	List<ResourceGatherRuleEntity> findAllByActiveTrueOrderByIdAsc();
+	List<ResourceGatherRuleEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
 	@EntityGraph(attributePaths = {"region", "resource", "requiredTool"})
 	@Query("""
 		select rule
 		from ResourceGatherRuleEntity rule
 		where rule.active = true
+		  and rule.deletedAt is null
 		  and rule.region.code = :regionCode
 		  and rule.resource.code = :resourceCode
 		""")

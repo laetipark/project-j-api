@@ -10,7 +10,9 @@ import java.util.Optional;
 public interface PlayerStorageRepository extends JpaRepository<PlayerStorageEntity, Long>{
 
 	@EntityGraph(attributePaths = {"resource"})
-	List<PlayerStorageEntity> findByPlayer_IdOrderByResource_CodeAsc(Long playerId);
+	List<PlayerStorageEntity> findByPlayer_IdAndDeletedAtIsNullOrderByResource_CodeAsc(Long playerId);
+
+	Optional<PlayerStorageEntity> findByPlayer_IdAndResource_IdAndDeletedAtIsNull(Long playerId, Long resourceId);
 
 	Optional<PlayerStorageEntity> findByPlayer_IdAndResource_Id(Long playerId, Long resourceId);
 

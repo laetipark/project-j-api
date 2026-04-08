@@ -3,12 +3,8 @@ package com.projectj.api.upgrade.service;
 import com.projectj.api.catalog.domain.UpgradeEntity;
 import com.projectj.api.catalog.domain.UpgradeResourceCostEntity;
 import com.projectj.api.catalog.service.CatalogLookupService;
-import com.projectj.api.common.domain.EconomyLogEntity;
-import com.projectj.api.common.domain.EconomyLogType;
 import com.projectj.api.common.exception.BusinessException;
 import com.projectj.api.common.exception.ErrorCode;
-import com.projectj.api.common.repository.EconomyLogRepository;
-import com.projectj.api.dayrun.service.DayRunService;
 import com.projectj.api.player.domain.PlayerEntity;
 import com.projectj.api.player.domain.PlayerUpgradePurchaseEntity;
 import com.projectj.api.player.repository.PlayerRepository;
@@ -31,9 +27,7 @@ public class UpgradePurchaseService{
 	private final PlayerSnapshotService playerSnapshotService;
 	private final UpgradeAvailabilityService upgradeAvailabilityService;
 	private final PlayerUpgradePurchaseRepository playerUpgradePurchaseRepository;
-	private final EconomyLogRepository economyLogRepository;
 	private final PlayerRepository playerRepository;
-	private final DayRunService dayRunService;
 
 	public UpgradePurchaseService(
 		CatalogLookupService catalogLookupService,
@@ -42,9 +36,7 @@ public class UpgradePurchaseService{
 		PlayerSnapshotService playerSnapshotService,
 		UpgradeAvailabilityService upgradeAvailabilityService,
 		PlayerUpgradePurchaseRepository playerUpgradePurchaseRepository,
-		EconomyLogRepository economyLogRepository,
-		PlayerRepository playerRepository,
-		DayRunService dayRunService
+		PlayerRepository playerRepository
 	){
 		this.catalogLookupService = catalogLookupService;
 		this.playerSupportService = playerSupportService;
@@ -52,9 +44,7 @@ public class UpgradePurchaseService{
 		this.playerSnapshotService = playerSnapshotService;
 		this.upgradeAvailabilityService = upgradeAvailabilityService;
 		this.playerUpgradePurchaseRepository = playerUpgradePurchaseRepository;
-		this.economyLogRepository = economyLogRepository;
 		this.playerRepository = playerRepository;
-		this.dayRunService = dayRunService;
 	}
 
 	@Transactional
@@ -62,7 +52,7 @@ public class UpgradePurchaseService{
 		PlayerEntity player = playerSupportService.getPlayerForUpdate(playerId);
 		playerSupportService.requireInHub(player, "Upgrades can only be purchased in Hub.");
 		UpgradeEntity upgrade = catalogLookupService.getUpgradeByCode(upgradeCode);
-		if(playerUpgradePurchaseRepository.existsByPlayer_IdAndUpgrade_Id(player.getId(), upgrade.getId())){
+		if(playerUpgradePurchaseRepository.existsByPlayer_IdAndUpgrade_IdAndDeletedAtIsNull(player.getId(), upgrade.getId())){
 			throw new BusinessException(ErrorCode.UPGRADE_ALREADY_PURCHASED, "Upgrade was already purchased.");
 		}
 
@@ -90,15 +80,6 @@ public class UpgradePurchaseService{
 		purchase.setPlayer(player);
 		purchase.setUpgrade(upgrade);
 		playerUpgradePurchaseRepository.save(purchase);
-
-		EconomyLogEntity economyLog = new EconomyLogEntity();
-		economyLog.setPlayer(player);
-		economyLog.setDayRun(dayRunService.getCurrentDayRun(player));
-		economyLog.setLogType(EconomyLogType.UPGRADE_PURCHASE);
-		economyLog.setGoldDelta(-upgrade.getGoldCost());
-		economyLog.setReasonCode("UPGRADE_PURCHASE");
-		economyLog.setNote(upgrade.getCode());
-		economyLogRepository.save(economyLog);
 
 		return new UpgradePurchaseResponse(upgrade.getCode(), playerSnapshotService.buildSnapshot(player));
 	}
