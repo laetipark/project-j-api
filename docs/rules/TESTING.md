@@ -16,6 +16,7 @@
 - 레시피 선택과 영업 계산
 - inventory slot 규칙
 - storage 이동
+- storage 이동이 별도 로그 테이블 없이 snapshot만 갱신되는 규칙
 - upgrade 구매
 - portal 이동 조건
 

@@ -98,3 +98,5 @@
 - portal 진입 가능 여부는 현재 지역, 도구, 평판으로 동적으로 계산한다.
 - 레시피 재료명은 활성 `ingredients.ingredient_name`과 exact match 해야 한다.
 - 영업 계산은 아직 `ingredientName -> resource.name` 브리지로 기존 `resources` 기반 소비 흐름을 유지한다.
+- 창고 이동은 현재 snapshot 상태만 갱신하며 별도 `storage_logs` 정본이나 감사 로그 테이블을 두지 않는다.
+- Unity 문서의 `Fishing Rod`, `Glow Moss`, `Wind Herb` 같은 표시명은 서버 코드값 `FishingRod`, `GlowMoss`, `WindHerb`와 구분한다.

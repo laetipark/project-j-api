@@ -27,6 +27,7 @@
 - `player_tools`는 도구 해금 상태를 저장한다.
 - inventory slot 계산은 서로 다른 자원 종류 수 기준으로 수행한다.
 - day run과 gather/service/economy 로그 테이블은 제거되었다.
+- `storage_logs` 같은 별도 창고 감사 로그 테이블은 유지하지 않는다.
 - 레시피 재료명은 활성 `ingredients.ingredient_name`과 exact match 해야 한다.
 
 ## SQL 작성 원칙

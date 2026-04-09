@@ -31,6 +31,13 @@
 - `Sickle`
 - `Lantern`
 
+## 코드값과 표시명
+
+- 서버와 외부 API는 지역, 자원, 도구의 공개 코드값을 그대로 사용한다.
+- 현재 서버 정본 코드값은 `FishingRod`, `GlowMoss`, `WindHerb`처럼 공백 없는 식별자다.
+- Unity 문서나 화면에서 `Fishing Rod`, `Glow Moss`, `Wind Herb` 같은 표시명을 써도 서버 요청/응답에는 코드값을 사용한다.
+- 레시피/재료와 달리 자원/도구는 별도 `resourceCode`, `toolCode` 계약을 유지한다.
+
 ## 행동 규칙
 
 - 이동은 현재 지역에서 활성 portal rule이 있어야 가능하다.

@@ -6,6 +6,7 @@
 - `/players/{playerId}`는 UUID 문자열을 사용한다.
 - 레시피는 `recipeId`를 사용하며, 값은 시트 `id` 열 값을 서버가 그대로 사용한 문자열이다. 예: `food_001`, `food_041`
 - 재료는 `ingredientId`를 사용하며, 값은 시트 `id` 열 값을 서버가 그대로 사용한 문자열이다. 예: `ingredient_001`, `ingredient_014`
+- 자원과 도구는 각각 `resourceCode`, `toolCode`를 사용하며 현재 서버 정본 값은 `FishingRod`, `GlowMoss`, `WindHerb`처럼 공백 없는 코드다.
 - DB 숫자 ID는 외부 계약으로 노출하지 않는다.
 
 ## 응답 형식
