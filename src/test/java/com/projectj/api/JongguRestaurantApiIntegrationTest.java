@@ -140,6 +140,48 @@ class JongguRestaurantApiIntegrationTest{
 	}
 
 	@Test
+	void hubOnlyActionsAreBlockedOutsideHub(){
+		CreatePlayerResponse player = createPlayer("hub-gate-player");
+		PlayerEntity playerEntity = loadPlayer(player.playerId());
+		playerEntity.setGold(30);
+		playerRepository.save(playerEntity);
+		playerResourceService.addInventory(playerEntity, catalogLookupService.getResourceByCode("Herb"), 3);
+		playerResourceService.addStorage(playerEntity, catalogLookupService.getResourceByCode("Shell"), 3);
+
+		explorationService.travel(player.playerId(), new TravelRequest("GoToDeepForest"));
+
+		BusinessException selectRecipeException = assertThrows(
+			BusinessException.class,
+			() -> restaurantService.selectRecipe(player.playerId(), new SelectRecipeRequest("food_021"))
+		);
+		assertEquals("INVALID_REGION", selectRecipeException.getErrorCode().getCode());
+
+		BusinessException runServiceException = assertThrows(
+			BusinessException.class,
+			() -> restaurantService.runService(player.playerId())
+		);
+		assertEquals("INVALID_REGION", runServiceException.getErrorCode().getCode());
+
+		BusinessException depositException = assertThrows(
+			BusinessException.class,
+			() -> storageService.deposit(player.playerId(), new StorageTransferRequest("Herb", 1))
+		);
+		assertEquals("STORAGE_ONLY_IN_HUB", depositException.getErrorCode().getCode());
+
+		BusinessException withdrawException = assertThrows(
+			BusinessException.class,
+			() -> storageService.withdraw(player.playerId(), new StorageTransferRequest("Shell", 1))
+		);
+		assertEquals("STORAGE_ONLY_IN_HUB", withdrawException.getErrorCode().getCode());
+
+		BusinessException upgradeException = assertThrows(
+			BusinessException.class,
+			() -> upgradePurchaseService.purchase(player.playerId(), "inventory_12_slots")
+		);
+		assertEquals("INVALID_REGION", upgradeException.getErrorCode().getCode());
+	}
+
+	@Test
 	void inventoryRowsAreSoftDeletedAndRevived(){
 		CreatePlayerResponse player = createPlayer("inventory-soft-delete-player");
 		PlayerEntity playerEntity = loadPlayer(player.playerId());

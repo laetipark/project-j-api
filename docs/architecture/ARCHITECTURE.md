@@ -96,6 +96,7 @@
 - inventory slot 계산은 서로 다른 resource code 개수를 기준으로 한다.
 - tool은 인벤토리 수량이 아니라 `player_tools`로 관리한다.
 - portal 진입 가능 여부는 현재 지역, 도구, 평판으로 동적으로 계산한다.
+- 창고, 레시피 선택, 영업, 업그레이드 구매는 모두 `Hub` 지역 제약을 서비스 계층에서 강하게 검증한다.
 - 레시피 재료명은 활성 `ingredients.ingredient_name`과 exact match 해야 한다.
 - 영업 계산은 아직 `ingredientName -> resource.name` 브리지로 기존 `resources` 기반 소비 흐름을 유지한다.
 - 창고 이동은 현재 snapshot 상태만 갱신하며 별도 `storage_logs` 정본이나 감사 로그 테이블을 두지 않는다.

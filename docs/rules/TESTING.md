@@ -14,6 +14,7 @@
 - 시트 `id` 열 값을 `ingredientId`로 그대로 사용하는 규칙
 - `재료`/`레시피` 시트 -> DB upsert / soft delete 동기화
 - 레시피 선택과 영업 계산
+- 레시피 선택, 영업, 창고, 업그레이드의 `Hub` 전용 제약
 - inventory slot 규칙
 - storage 이동
 - storage 이동이 별도 로그 테이블 없이 snapshot만 갱신되는 규칙

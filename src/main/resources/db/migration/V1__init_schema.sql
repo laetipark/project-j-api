@@ -241,17 +241,3 @@ create table player_upgrade_purchases
 	constraint fk_player_upgrade_purchases_players foreign key (player_id) references players (id),
 	constraint fk_player_upgrade_purchases_upgrades foreign key (upgrade_id) references upgrades (id)
 );
-
-create table storage_logs
-(
-	id          bigint auto_increment primary key,
-	player_id   bigint      not null,
-	resource_id bigint      not null,
-	action_type varchar(40) not null,
-	quantity    int         not null,
-	created_at  timestamp   not null default current_timestamp,
-	updated_at  timestamp   not null default current_timestamp,
-	deleted_at  timestamp null,
-	constraint fk_storage_logs_players foreign key (player_id) references players (id),
-	constraint fk_storage_logs_resources foreign key (resource_id) references resources (id)
-);
