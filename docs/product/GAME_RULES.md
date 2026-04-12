@@ -10,9 +10,11 @@
 
 - `Hub`
 - `Beach`
+- `Sea`
 - `DeepForest`
-- `AbandonedMine`
 - `WindHill`
+- `Shortcut`
+- `AbandonedMine`
 
 ## 자원
 
@@ -41,7 +43,11 @@
 ## 행동 규칙
 
 - 이동은 현재 지역에서 활성 portal rule이 있어야 가능하다.
+- 허브에서 직접 나가는 탐험 진입점은 `Beach`다.
+- 탐험 연결은 `Beach -> Sea`, `Beach -> DeepForest -> WindHill -> AbandonedMine`, `Beach -> Shortcut -> WindHill` 구조를 따른다.
+- 탐험 지역의 허브 복귀 portal rule은 언제든 `Hub`로 돌아갈 수 있게 유지한다.
 - 채집은 현재 지역에서만 가능하고, 필요한 도구가 해금되어 있어야 한다.
+- `Sea`의 어망 채집은 기존 채집 API에서 `regionCode=Sea`, `resourceCode=Fish`로 처리한다.
 - 창고는 `Hub`에서만 사용한다.
 - 레시피 선택은 `recipeId` 기준으로 한다.
 - 레시피 선택, 영업, 업그레이드 구매는 `Hub`에서만 실행한다.
@@ -90,6 +96,7 @@
 
 - 도구는 도구 해금 상태로 관리하며 인벤토리 슬롯을 차지하지 않는다.
 - 인벤토리는 자원 수량이 아니라 서로 다른 자원 종류 수로 슬롯을 계산한다.
-- `AbandonedMine` 진입에는 `Lantern`이 필요하다.
-- `WindHillShortcut`은 평판 6 이상이 필요하다.
+- `AbandonedMine` 진입 portal rule에는 `Lantern`이 필요하다.
+- `Shortcut` 진입과 통과 portal rule에는 `unlock_shortcut` 업그레이드 구매가 필요하다.
+- `unlock_shortcut`은 `Gold 30`을 소비하는 `PORTAL_UNLOCK` 업그레이드다.
 - 업그레이드는 현재 골드, 자원, 도구, 선행 업그레이드 상태로 판정한다.

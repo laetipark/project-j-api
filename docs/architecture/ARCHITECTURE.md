@@ -36,6 +36,7 @@
 - 도구 해금
 - 업그레이드 구매 상태
 - 지역 이동 규칙과 채집 규칙
+- 포털의 도구/평판/업그레이드 요구 조건
 - 자원 카탈로그
 
 레시피와 재료 정본은 DB가 아니라 Google Sheets `레시피`, `재료` 시트다.
@@ -96,6 +97,8 @@
 - inventory slot 계산은 서로 다른 resource code 개수를 기준으로 한다.
 - tool은 인벤토리 수량이 아니라 `player_tools`로 관리한다.
 - portal 진입 가능 여부는 현재 지역, 도구, 평판으로 동적으로 계산한다.
+- portal 진입 가능 여부는 `player_upgrade_purchases` 기반 업그레이드 구매 상태도 함께 계산한다.
+- `Shortcut` 해금은 별도 지역 해금 테이블 없이 `unlock_shortcut` 업그레이드 구매로 표현한다.
 - 창고, 레시피 선택, 영업, 업그레이드 구매는 모두 `Hub` 지역 제약을 서비스 계층에서 강하게 검증한다.
 - 레시피 재료명은 활성 `ingredients.ingredient_name`과 exact match 해야 한다.
 - 영업 계산은 아직 `ingredientName -> resource.name` 브리지로 기존 `resources` 기반 소비 흐름을 유지한다.

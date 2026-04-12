@@ -101,7 +101,8 @@ public class BootstrapService{
 			portalRule.getFromRegion().getCode(),
 			portalRule.getToRegion().getCode(),
 			portalRule.getRequiredTool() != null ? portalRule.getRequiredTool().getCode() : null,
-			portalRule.getRequiredReputation()
+			portalRule.getRequiredReputation(),
+			portalRule.getRequiredUpgrade() != null ? portalRule.getRequiredUpgrade().getCode() : null
 		);
 	}
 

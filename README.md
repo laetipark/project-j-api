@@ -38,6 +38,7 @@ Flyway가 애플리케이션 시작 시 자동 실행됩니다.
 
 - 스키마 정의: [src/main/resources/db/migration/V1__init_schema.sql](/D:/project-j-api/src/main/resources/db/migration/V1__init_schema.sql)
 - 초기 시드: [src/main/resources/db/migration/V2__seed_catalog.sql](/D:/project-j-api/src/main/resources/db/migration/V2__seed_catalog.sql)
+- 탐험맵 갱신: [src/main/resources/db/migration/V3__exploration_map_graph.sql](/D:/project-j-api/src/main/resources/db/migration/V3__exploration_map_graph.sql)
 - 현재 스키마는 처음부터 `deleted_at` 기반 soft delete, 레시피/재료 시트 정본, `recipes`/`ingredients`/`recipe_ingredients` 동기화 구조를 반영합니다.
 
 ## Swagger
@@ -74,6 +75,14 @@ Flyway가 애플리케이션 시작 시 자동 실행됩니다.
 ```
 
 실패 시 `error.code`, `error.message`, `error.fieldErrors`를 함께 반환합니다.
+
+## 탐험맵 API 계약
+
+- `bootstrap.regions`는 `Beach`, `Sea`, `DeepForest`, `WindHill`, `Shortcut`, `AbandonedMine`을 포함합니다.
+- `bootstrap.portalRules`는 `requiredToolCode`, `requiredReputation`, `requiredUpgradeCode`를 반환합니다.
+- `Shortcut` 포털은 `unlock_shortcut` 구매 전 `PORTAL_UPGRADE_REQUIRED`로 막히며, `unlock_shortcut`은 `Gold 30`을 소비하는 `PORTAL_UNLOCK` 업그레이드입니다.
+- player snapshot은 `purchasedUpgradeCodes`를 포함합니다.
+- `Sea`의 어망 채집은 `POST /api/v1/players/{playerId}/gathers`에서 `regionCode=Sea`, `resourceCode=Fish`로 요청합니다.
 
 ## Google Sheets 카탈로그 연동
 
@@ -118,7 +127,10 @@ Flyway가 애플리케이션 시작 시 자동 실행됩니다.
 - inventory slot 규칙
 - storage 이동
 - upgrade 구매
-- portal 이동 조건
+- Beach 중심 portal 이동 조건
+- Shortcut 구매 해금 조건
+- Sea 어망 채집 계약
+- 탐험 지역별 Hub 즉시 복귀
 
 ## 검증 포인트
 
@@ -130,3 +142,4 @@ Flyway가 애플리케이션 시작 시 자동 실행됩니다.
 - 인벤토리 슬롯은 수량 합이 아니라 서로 다른 resource 종류 수로 계산합니다.
 - 도구는 `player_tools`로 관리하며 인벤토리 슬롯을 차지하지 않습니다.
 - 업그레이드 가능 여부는 현재 골드, 자원, 도구, 선행 업그레이드 상태로 동적으로 계산합니다.
+- `Shortcut` 해금은 별도 지역 해금 테이블 없이 `player_upgrade_purchases`의 `unlock_shortcut` 구매 상태로 계산합니다.

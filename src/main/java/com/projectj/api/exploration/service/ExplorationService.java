@@ -13,6 +13,7 @@ import com.projectj.api.exploration.dto.TravelRequest;
 import com.projectj.api.player.domain.PlayerEntity;
 import com.projectj.api.player.dto.PlayerSnapshotResponse;
 import com.projectj.api.player.repository.PlayerRepository;
+import com.projectj.api.player.repository.PlayerUpgradePurchaseRepository;
 import com.projectj.api.player.service.PlayerResourceService;
 import com.projectj.api.player.service.PlayerSnapshotService;
 import com.projectj.api.player.service.PlayerSupportService;
@@ -27,19 +28,22 @@ public class ExplorationService{
 	private final PlayerResourceService playerResourceService;
 	private final PlayerSnapshotService playerSnapshotService;
 	private final PlayerRepository playerRepository;
+	private final PlayerUpgradePurchaseRepository playerUpgradePurchaseRepository;
 
 	public ExplorationService(
 		CatalogLookupService catalogLookupService,
 		PlayerSupportService playerSupportService,
 		PlayerResourceService playerResourceService,
 		PlayerSnapshotService playerSnapshotService,
-		PlayerRepository playerRepository
+		PlayerRepository playerRepository,
+		PlayerUpgradePurchaseRepository playerUpgradePurchaseRepository
 	){
 		this.catalogLookupService = catalogLookupService;
 		this.playerSupportService = playerSupportService;
 		this.playerResourceService = playerResourceService;
 		this.playerSnapshotService = playerSnapshotService;
 		this.playerRepository = playerRepository;
+		this.playerUpgradePurchaseRepository = playerUpgradePurchaseRepository;
 	}
 
 	@Transactional
@@ -54,6 +58,10 @@ public class ExplorationService{
 		}
 		if(player.getReputation() < portalRule.getRequiredReputation()){
 			throw new BusinessException(ErrorCode.REPUTATION_REQUIRED, "Required reputation is not met.");
+		}
+		if(portalRule.getRequiredUpgrade() != null
+			&& !playerUpgradePurchaseRepository.existsByPlayer_IdAndUpgrade_IdAndDeletedAtIsNull(player.getId(), portalRule.getRequiredUpgrade().getId())){
+			throw new BusinessException(ErrorCode.PORTAL_UPGRADE_REQUIRED, "Required portal upgrade is not purchased: " + portalRule.getRequiredUpgrade().getCode());
 		}
 		player.setCurrentRegion(portalRule.getToRegion());
 		playerRepository.save(player);

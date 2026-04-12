@@ -16,6 +16,7 @@ public record PlayerSnapshotResponse(
 	List<ResourceAmountResponse> inventoryResources,
 	List<ResourceAmountResponse> storageResources,
 	List<String> unlockedTools,
+	List<String> purchasedUpgradeCodes,
 	List<AvailableUpgradeResponse> availableUpgrades
 ){
 }

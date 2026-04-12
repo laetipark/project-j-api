@@ -44,6 +44,10 @@ public class PortalRuleEntity extends BaseTimeEntity{
 	@JoinColumn(name = "required_tool_id", foreignKey = @ForeignKey(name = "fk_portal_rules_tools"))
 	private ToolEntity requiredTool;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "required_upgrade_id", foreignKey = @ForeignKey(name = "fk_portal_rules_required_upgrades"))
+	private UpgradeEntity requiredUpgrade;
+
 	@Column(name = "required_reputation", nullable = false)
 	private int requiredReputation;
 
@@ -95,6 +99,14 @@ public class PortalRuleEntity extends BaseTimeEntity{
 
 	public void setRequiredTool(ToolEntity requiredTool){
 		this.requiredTool = requiredTool;
+	}
+
+	public UpgradeEntity getRequiredUpgrade(){
+		return requiredUpgrade;
+	}
+
+	public void setRequiredUpgrade(UpgradeEntity requiredUpgrade){
+		this.requiredUpgrade = requiredUpgrade;
 	}
 
 	public int getRequiredReputation(){

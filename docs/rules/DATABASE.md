@@ -25,6 +25,9 @@
 - `player_inventory`, `player_storage`는 수량이 0이 되면 hard delete 대신 `deleted_at`으로 soft delete 한다.
 - soft-deleted inventory/storage row는 같은 `(player, resource)`가 다시 생기면 revive 해서 재사용한다.
 - `player_tools`는 도구 해금 상태를 저장한다.
+- `player_upgrade_purchases`는 업그레이드 구매 상태를 저장하며 `PORTAL_UNLOCK` 해금에도 사용한다.
+- `portal_rules.required_upgrade_id`는 포털 진입에 필요한 업그레이드를 참조한다.
+- `Shortcut` 해금은 `unlock_shortcut` 업그레이드 구매 상태로 판정하고 별도 `player_region_unlocks` 테이블을 만들지 않는다.
 - inventory slot 계산은 서로 다른 자원 종류 수 기준으로 수행한다.
 - day run과 gather/service/economy 로그 테이블은 제거되었다.
 - `storage_logs` 같은 별도 창고 감사 로그 테이블은 유지하지 않는다.

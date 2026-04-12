@@ -20,6 +20,10 @@
 - storage 이동이 별도 로그 테이블 없이 snapshot만 갱신되는 규칙
 - upgrade 구매
 - portal 이동 조건
+- `Beach` 중심 탐험 포털 그래프
+- `Shortcut`의 `unlock_shortcut` 구매 전/후 이동 조건
+- `Sea` 어망 채집의 기존 gather API 계약
+- 탐험 지역별 허브 즉시 복귀 portal rule
 
 ## 테스트 작성 원칙
 

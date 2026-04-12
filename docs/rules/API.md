@@ -7,6 +7,7 @@
 - 레시피는 `recipeId`를 사용하며, 값은 시트 `id` 열 값을 서버가 그대로 사용한 문자열이다. 예: `food_001`, `food_041`
 - 재료는 `ingredientId`를 사용하며, 값은 시트 `id` 열 값을 서버가 그대로 사용한 문자열이다. 예: `ingredient_001`, `ingredient_014`
 - 자원과 도구는 각각 `resourceCode`, `toolCode`를 사용하며 현재 서버 정본 값은 `FishingRod`, `GlowMoss`, `WindHerb`처럼 공백 없는 코드다.
+- 지역과 포털은 각각 `regionCode`, `portalCode`를 사용하며 현재 탐험 지역 코드는 `Beach`, `Sea`, `DeepForest`, `WindHill`, `Shortcut`, `AbandonedMine`이다.
 - DB 숫자 ID는 외부 계약으로 노출하지 않는다.
 
 ## 응답 형식
@@ -28,6 +29,11 @@
 - 레시피 선택 요청은 `recipeId`를 받는다.
 - 레시피 선택, 영업 실행, 창고 입출고, 업그레이드 구매는 `Hub` 밖에서 허용하지 않는다.
 - 영업 실행 응답은 `recipeId`와 갱신된 snapshot을 함께 반환한다.
+- `bootstrap.portalRules[]`는 `requiredToolCode`, `requiredReputation`, nullable `requiredUpgradeCode`를 포함한다.
+- player snapshot은 클라이언트가 포털 해금 여부를 판단할 수 있도록 `purchasedUpgradeCodes`를 포함한다.
+- 포털 요구 업그레이드가 없으면 `requiredUpgradeCode=null`을 반환한다.
+- 포털 요구 업그레이드가 구매되지 않았으면 `PORTAL_UPGRADE_REQUIRED`를 반환한다.
+- `Sea`의 어망 채집은 별도 API 없이 기존 `POST /api/v1/players/{playerId}/gathers`에서 `regionCode=Sea`, `resourceCode=Fish`로 처리한다.
 - 실패 가능한 액션은 이유가 명확한 에러 코드와 메시지를 반환한다.
 
 ## Google Sheets 계약

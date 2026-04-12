@@ -9,10 +9,10 @@ import java.util.Optional;
 
 public interface PortalRuleRepository extends JpaRepository<PortalRuleEntity, Long>{
 
-	@EntityGraph(attributePaths = {"fromRegion", "toRegion", "requiredTool"})
+	@EntityGraph(attributePaths = {"fromRegion", "toRegion", "requiredTool", "requiredUpgrade"})
 	List<PortalRuleEntity> findAllByActiveTrueAndDeletedAtIsNullOrderByIdAsc();
 
-	@EntityGraph(attributePaths = {"fromRegion", "toRegion", "requiredTool"})
+	@EntityGraph(attributePaths = {"fromRegion", "toRegion", "requiredTool", "requiredUpgrade"})
 	Optional<PortalRuleEntity> findByCodeAndActiveTrueAndDeletedAtIsNull(String code);
 
 }

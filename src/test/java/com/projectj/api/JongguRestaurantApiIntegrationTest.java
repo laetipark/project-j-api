@@ -1,5 +1,9 @@
 package com.projectj.api;
 
+import com.projectj.api.catalog.dto.BootstrapResponse;
+import com.projectj.api.catalog.dto.PortalRuleResponse;
+import com.projectj.api.catalog.dto.UpgradeDefinitionResponse;
+import com.projectj.api.catalog.service.BootstrapService;
 import com.projectj.api.catalog.service.CatalogLookupService;
 import com.projectj.api.catalog.service.RecipeCatalogService;
 import com.projectj.api.catalog.service.SheetRecipe;
@@ -64,6 +68,9 @@ class JongguRestaurantApiIntegrationTest{
 
 	@Autowired
 	private CatalogLookupService catalogLookupService;
+
+	@Autowired
+	private BootstrapService bootstrapService;
 
 	@Autowired
 	private PlayerResourceService playerResourceService;
@@ -148,6 +155,7 @@ class JongguRestaurantApiIntegrationTest{
 		playerResourceService.addInventory(playerEntity, catalogLookupService.getResourceByCode("Herb"), 3);
 		playerResourceService.addStorage(playerEntity, catalogLookupService.getResourceByCode("Shell"), 3);
 
+		explorationService.travel(player.playerId(), new TravelRequest("GoToBeach"));
 		explorationService.travel(player.playerId(), new TravelRequest("GoToDeepForest"));
 
 		BusinessException selectRecipeException = assertThrows(
@@ -244,21 +252,159 @@ class JongguRestaurantApiIntegrationTest{
 	}
 
 	@Test
-	void portalAccessChecksToolAndReputationConditionsWithoutPhaseGate(){
+	void bootstrapIncludesBeachCenteredExplorationMapContract(){
+		BootstrapResponse bootstrap = bootstrapService.getBootstrap();
+
+		assertTrue(bootstrap.regions().stream().anyMatch(region -> region.code().equals("Sea")));
+		assertTrue(bootstrap.regions().stream().anyMatch(region -> region.code().equals("Shortcut")));
+
+		Map<String, PortalRuleResponse> portalRules = bootstrap.portalRules().stream()
+			.collect(Collectors.toMap(PortalRuleResponse::code, portalRule -> portalRule));
+		assertEquals("Beach", portalRules.get("GoToSea").fromRegionCode());
+		assertEquals("Sea", portalRules.get("GoToSea").toRegionCode());
+		assertEquals("Beach", portalRules.get("GoToDeepForest").fromRegionCode());
+		assertEquals("WindHill", portalRules.get("GoToAbandonedMine").fromRegionCode());
+		assertEquals("Lantern", portalRules.get("GoToAbandonedMine").requiredToolCode());
+		assertEquals("unlock_shortcut", portalRules.get("GoToShortcutFromBeach").requiredUpgradeCode());
+		assertEquals("unlock_shortcut", portalRules.get("GoToWindHillFromShortcut").requiredUpgradeCode());
+		assertFalse(portalRules.containsKey("WindHillShortcut"));
+
+		Map<String, UpgradeDefinitionResponse> upgrades = bootstrap.upgrades().stream()
+			.collect(Collectors.toMap(UpgradeDefinitionResponse::code, upgrade -> upgrade));
+		UpgradeDefinitionResponse shortcutUpgrade = upgrades.get("unlock_shortcut");
+		assertNotNull(shortcutUpgrade);
+		assertEquals("PORTAL_UNLOCK", shortcutUpgrade.upgradeType());
+		assertEquals(30, shortcutUpgrade.goldCost());
+		assertTrue(shortcutUpgrade.resourceCosts().isEmpty());
+	}
+
+	@Test
+	void portalGraphUsesBeachAsExplorationConnectionHub(){
 		CreatePlayerResponse player = createPlayer("portal-player");
+
+		BusinessException directForestException = assertThrows(
+			BusinessException.class,
+			() -> explorationService.travel(player.playerId(), new TravelRequest("GoToDeepForest"))
+		);
+		assertEquals("PORTAL_NOT_ACCESSIBLE", directForestException.getErrorCode().getCode());
+
+		BusinessException directWindHillException = assertThrows(
+			BusinessException.class,
+			() -> explorationService.travel(player.playerId(), new TravelRequest("GoToWindHill"))
+		);
+		assertEquals("PORTAL_NOT_ACCESSIBLE", directWindHillException.getErrorCode().getCode());
+
+		BusinessException directMineException = assertThrows(
+			BusinessException.class,
+			() -> explorationService.travel(player.playerId(), new TravelRequest("GoToAbandonedMine"))
+		);
+		assertEquals("PORTAL_NOT_ACCESSIBLE", directMineException.getErrorCode().getCode());
+
+		PlayerSnapshotResponse beach = explorationService.travel(player.playerId(), new TravelRequest("GoToBeach"));
+		assertEquals("Beach", beach.currentRegion());
+		PlayerSnapshotResponse sea = explorationService.travel(player.playerId(), new TravelRequest("GoToSea"));
+		assertEquals("Sea", sea.currentRegion());
+		PlayerSnapshotResponse backToBeach = explorationService.travel(player.playerId(), new TravelRequest("ReturnToBeachFromSea"));
+		assertEquals("Beach", backToBeach.currentRegion());
+		explorationService.travel(player.playerId(), new TravelRequest("GoToDeepForest"));
+		PlayerSnapshotResponse windHill = explorationService.travel(player.playerId(), new TravelRequest("GoToWindHill"));
+		assertEquals("WindHill", windHill.currentRegion());
 
 		BusinessException mineException = assertThrows(
 			BusinessException.class,
 			() -> explorationService.travel(player.playerId(), new TravelRequest("GoToAbandonedMine"))
 		);
 		assertEquals("TOOL_REQUIRED", mineException.getErrorCode().getCode());
+	}
 
-		explorationService.travel(player.playerId(), new TravelRequest("GoToDeepForest"));
+	@Test
+	void shortcutPortalRequiresPurchasedPortalUpgrade(){
+		CreatePlayerResponse player = createPlayer("shortcut-player");
+
+		explorationService.travel(player.playerId(), new TravelRequest("GoToBeach"));
 		BusinessException shortcutException = assertThrows(
 			BusinessException.class,
-			() -> explorationService.travel(player.playerId(), new TravelRequest("WindHillShortcut"))
+			() -> explorationService.travel(player.playerId(), new TravelRequest("GoToShortcutFromBeach"))
 		);
-		assertEquals("REPUTATION_REQUIRED", shortcutException.getErrorCode().getCode());
+		assertEquals("PORTAL_UPGRADE_REQUIRED", shortcutException.getErrorCode().getCode());
+		explorationService.travel(player.playerId(), new TravelRequest("ReturnToHubFromBeach"));
+
+		PlayerEntity playerEntity = loadPlayer(player.playerId());
+		playerEntity.setGold(30);
+		playerRepository.save(playerEntity);
+
+		UpgradePurchaseResponse purchase = upgradePurchaseService.purchase(player.playerId(), "unlock_shortcut");
+		assertEquals("unlock_shortcut", purchase.upgradeCode());
+		assertTrue(purchase.snapshot().purchasedUpgradeCodes().contains("unlock_shortcut"));
+		assertEquals(0, purchase.snapshot().gold());
+
+		explorationService.travel(player.playerId(), new TravelRequest("GoToBeach"));
+		PlayerSnapshotResponse shortcut = explorationService.travel(player.playerId(), new TravelRequest("GoToShortcutFromBeach"));
+		assertEquals("Shortcut", shortcut.currentRegion());
+		assertTrue(shortcut.purchasedUpgradeCodes().contains("unlock_shortcut"));
+		PlayerSnapshotResponse windHill = explorationService.travel(player.playerId(), new TravelRequest("GoToWindHillFromShortcut"));
+		assertEquals("WindHill", windHill.currentRegion());
+	}
+
+	@Test
+	void seaNetGatherUsesExistingGatherContract(){
+		CreatePlayerResponse player = createPlayer("sea-gather-player");
+
+		explorationService.travel(player.playerId(), new TravelRequest("GoToBeach"));
+		explorationService.travel(player.playerId(), new TravelRequest("GoToSea"));
+		GatherResponse seaFish = explorationService.gather(player.playerId(), new GatherRequest("Sea", "Fish", 1));
+
+		assertTrue(seaFish.success());
+		assertEquals(1, toQuantityMap(seaFish.snapshot()).get("Fish"));
+
+		explorationService.travel(player.playerId(), new TravelRequest("ReturnToBeachFromSea"));
+		GatherResponse wrongRegion = explorationService.gather(player.playerId(), new GatherRequest("Sea", "Fish", 1));
+		assertFalse(wrongRegion.success());
+		assertTrue(wrongRegion.message().contains("current region"));
+	}
+
+	@Test
+	void explorationScenesCanReturnDirectlyToHub(){
+		CreatePlayerResponse beachPlayer = createPlayer("return-beach-player");
+		explorationService.travel(beachPlayer.playerId(), new TravelRequest("GoToBeach"));
+		assertEquals("Hub", explorationService.travel(beachPlayer.playerId(), new TravelRequest("ReturnToHubFromBeach")).currentRegion());
+
+		CreatePlayerResponse seaPlayer = createPlayer("return-sea-player");
+		explorationService.travel(seaPlayer.playerId(), new TravelRequest("GoToBeach"));
+		explorationService.travel(seaPlayer.playerId(), new TravelRequest("GoToSea"));
+		assertEquals("Hub", explorationService.travel(seaPlayer.playerId(), new TravelRequest("ReturnToHubFromSea")).currentRegion());
+
+		CreatePlayerResponse forestPlayer = createPlayer("return-forest-player");
+		explorationService.travel(forestPlayer.playerId(), new TravelRequest("GoToBeach"));
+		explorationService.travel(forestPlayer.playerId(), new TravelRequest("GoToDeepForest"));
+		assertEquals("Hub", explorationService.travel(forestPlayer.playerId(), new TravelRequest("ReturnToHubFromDeepForest")).currentRegion());
+
+		CreatePlayerResponse windHillPlayer = createPlayer("return-windhill-player");
+		explorationService.travel(windHillPlayer.playerId(), new TravelRequest("GoToBeach"));
+		explorationService.travel(windHillPlayer.playerId(), new TravelRequest("GoToDeepForest"));
+		explorationService.travel(windHillPlayer.playerId(), new TravelRequest("GoToWindHill"));
+		assertEquals("Hub", explorationService.travel(windHillPlayer.playerId(), new TravelRequest("ReturnToHubFromWindHill")).currentRegion());
+
+		CreatePlayerResponse shortcutPlayer = createPlayer("return-shortcut-player");
+		PlayerEntity shortcutPlayerEntity = loadPlayer(shortcutPlayer.playerId());
+		shortcutPlayerEntity.setGold(30);
+		playerRepository.save(shortcutPlayerEntity);
+		upgradePurchaseService.purchase(shortcutPlayer.playerId(), "unlock_shortcut");
+		explorationService.travel(shortcutPlayer.playerId(), new TravelRequest("GoToBeach"));
+		explorationService.travel(shortcutPlayer.playerId(), new TravelRequest("GoToShortcutFromBeach"));
+		assertEquals("Hub", explorationService.travel(shortcutPlayer.playerId(), new TravelRequest("ReturnToHubFromShortcut")).currentRegion());
+
+		CreatePlayerResponse minePlayer = createPlayer("return-mine-player");
+		PlayerEntity minePlayerEntity = loadPlayer(minePlayer.playerId());
+		minePlayerEntity.setGold(45);
+		playerRepository.save(minePlayerEntity);
+		playerResourceService.addStorage(minePlayerEntity, catalogLookupService.getResourceByCode("Mushroom"), 2);
+		upgradePurchaseService.purchase(minePlayer.playerId(), "unlock_lantern");
+		explorationService.travel(minePlayer.playerId(), new TravelRequest("GoToBeach"));
+		explorationService.travel(minePlayer.playerId(), new TravelRequest("GoToDeepForest"));
+		explorationService.travel(minePlayer.playerId(), new TravelRequest("GoToWindHill"));
+		explorationService.travel(minePlayer.playerId(), new TravelRequest("GoToAbandonedMine"));
+		assertEquals("Hub", explorationService.travel(minePlayer.playerId(), new TravelRequest("ReturnToHubFromAbandonedMine")).currentRegion());
 	}
 
 	private CreatePlayerResponse createPlayer(String displayName){

@@ -3,6 +3,7 @@ package com.projectj.api.player.service;
 import com.projectj.api.player.domain.PlayerEntity;
 import com.projectj.api.player.dto.PlayerSnapshotResponse;
 import com.projectj.api.player.dto.ResourceAmountResponse;
+import com.projectj.api.player.repository.PlayerUpgradePurchaseRepository;
 import com.projectj.api.upgrade.service.UpgradeAvailabilityService;
 import org.springframework.stereotype.Service;
 
@@ -14,15 +15,18 @@ public class PlayerSnapshotService{
 	private final PlayerSupportService playerSupportService;
 	private final PlayerResourceService playerResourceService;
 	private final UpgradeAvailabilityService upgradeAvailabilityService;
+	private final PlayerUpgradePurchaseRepository playerUpgradePurchaseRepository;
 
 	public PlayerSnapshotService(
 		PlayerSupportService playerSupportService,
 		PlayerResourceService playerResourceService,
-		UpgradeAvailabilityService upgradeAvailabilityService
+		UpgradeAvailabilityService upgradeAvailabilityService,
+		PlayerUpgradePurchaseRepository playerUpgradePurchaseRepository
 	){
 		this.playerSupportService = playerSupportService;
 		this.playerResourceService = playerResourceService;
 		this.upgradeAvailabilityService = upgradeAvailabilityService;
+		this.playerUpgradePurchaseRepository = playerUpgradePurchaseRepository;
 	}
 
 	public PlayerSnapshotResponse getSnapshot(String playerId){
@@ -54,6 +58,7 @@ public class PlayerSnapshotService{
 			inventoryResources,
 			storageResources,
 			unlockedTools,
+			playerUpgradePurchaseRepository.findUpgradeCodesByPlayerId(player.getId()),
 			upgradeAvailabilityService.getAvailableUpgrades(player)
 		);
 	}
